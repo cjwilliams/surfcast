@@ -25,13 +25,24 @@ PBL_APP_INFO( MY_UUID,
 static Window *window;
 static TextLayer *text_layer;
 static MenuLayer *menu_layer;
+static TextLayer *rating_layer;
 
 static GBitmap rating_icons[NUM_RATINGS];
 static GBitmap surf_icons[NUM_RATINGS];
 
+typedef struct {
+	char *location;
+	int overall;
+	int swell;
+	int tide;
+	int wind;
+	int warning;
+} Forecast;
+
+static Forecast *forecast;
 
 void create_menu_screen( void );
-void create_dashboard( char *text );
+void create_dashboard( Forecast *forecast );
 
 /********** SPLASH **********/
 void splash_click_handler( ClickRecognizerRef recognizer, void *context ) {
@@ -49,18 +60,18 @@ void create_splash_screen( void ) {
 	window_set_click_config_provider( window, ( ClickConfigProvider ) splash_config_provider );
 	
 	text_layer = text_layer_create( GRect( 0,0,SCREEN_WIDTH,USABLE_HEIGHT-( STATUS_BAR_HEIGHT*2 ) ) );
-	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
 	text_layer_set_text( text_layer, "\nPebble Surfcast\n" );
 	text_layer_set_font( text_layer, fonts_get_system_font( FONT_KEY_GOTHIC_28_BOLD ) );
 	text_layer_set_text_alignment( text_layer, GTextAlignmentCenter );
 	text_layer_set_overflow_mode( text_layer, GTextOverflowModeWordWrap );
+	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
 	
 	text_layer = text_layer_create( GRect( 0,USABLE_HEIGHT-(2*STATUS_BAR_HEIGHT),SCREEN_WIDTH,STATUS_BAR_HEIGHT*2 ) );
-	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
 	text_layer_set_text( text_layer, "Data provided by Spitcast (www.spitcast.com)" );
 	text_layer_set_font( text_layer, fonts_get_system_font( FONT_KEY_GOTHIC_14 ) );
 	text_layer_set_text_alignment( text_layer, GTextAlignmentCenter );
 	text_layer_set_overflow_mode( text_layer, GTextOverflowModeWordWrap );
+	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
 }
 
 /********** LOCATIONS MENU **********/
@@ -72,9 +83,6 @@ static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t secti
   switch (section_index) {
     case 0:
       return NUM_SPOTS;
-			break;
-    case 1:
-      return 1;
 			break;
     default:
       return 0;
@@ -90,10 +98,6 @@ static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, ui
   switch (section_index) {
     case 0:
       menu_cell_basic_header_draw(ctx, cell_layer, "Orange County");
-      break;
-
-    case 1:
-      menu_cell_basic_header_draw(ctx, cell_layer, "Santa Cruz County");
       break;
   }
 }
@@ -123,34 +127,29 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
         break;
       }
       break;
-
-    case 1:
-      switch (cell_index->row) {
-        case 0:
-          menu_cell_title_draw(ctx, cell_layer, "Something Else");
-          break;
-      }
   }
 }
 
 void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
-  switch (cell_index->row) {
-    case 0:
-  			create_dashboard( "Spot 1" );
-  			break;
-  		case 1:
-  			create_dashboard( "Spot 2" );
-  			break;
-  		case 2:
-  			create_dashboard( "Spot 3" );
-  			break;
-  		case 3:
-  			create_dashboard( "Spot 4" );
-  			break;
-  		case 4:
-  			create_dashboard( "Spot 5" );
-  			break;
-  }
+	forecast.location="Spot 1";
+	// forecast.swell=forecast.wind=forecast.overall=forecast.tide=3;
+	switch (cell_index->row) {
+	    case 0:
+	 			create_dashboard( forecast );
+	 			break;
+	 		case 1:
+	 			create_dashboard( forecast );
+	 			break;
+	 		case 2:
+	 			create_dashboard( forecast );
+	 			break;
+	 		case 3:
+	 			create_dashboard( forecast );
+	 			break;
+	 		case 4:
+	 			create_dashboard( forecast );
+	 			break;
+	  }
 }
 
 void window_load ( Window *window ) {	
@@ -190,23 +189,39 @@ void create_menu_screen( void ) {
 }
 
 /********** FORECAST **********/
-void create_box( char *text, int width_units, int x, int y ) {
+void create_widget( char *text, int width_units, int x, int y, int rating ) {
 	text_layer = text_layer_create( GRect( x,y,( width_units * SCREEN_WIDTH )/2,USABLE_HEIGHT/3 ) );
-	
-	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
 	text_layer_set_text( text_layer, text );
+	
 	text_layer_set_text_alignment( text_layer, GTextAlignmentCenter );
+	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
+	
+	rating_layer = text_layer_create( GRect( x,y+16,( width_units * SCREEN_WIDTH )/2,( USABLE_HEIGHT/3 )-16 ) );
+	
+	switch( rating ){
+		case 1: text_layer_set_text( rating_layer, "Poor" ); break;
+		case 2: text_layer_set_text( rating_layer, "Poor-Fair" ); break;
+		case 3: text_layer_set_text( rating_layer, "Fair" ); break;
+		case 4: text_layer_set_text( rating_layer, "Fair-Good" ); break;
+		case 5: text_layer_set_text( rating_layer, "Good" ); break;
+		case 0: text_layer_set_text( rating_layer, "!" ); break;
+		default: text_layer_set_text( rating_layer, "=)" ); break;
+	}
+	
+	text_layer_set_text_alignment( rating_layer, GTextAlignmentCenter );
+	text_layer_set_background_color( rating_layer, GColorBlack );
+	layer_add_child( text_layer_get_layer( text_layer ), text_layer_get_layer( rating_layer ) );	
 }
 
-void create_dashboard( char *text ) {
+void create_dashboard( Forecast *forecast ) {
 	window = window_create();
 	window_stack_push( window, true /* Animated */ );
 	
-	create_box( text,2,0,0 );
-	create_box( "Swell",1,0,USABLE_HEIGHT/3 );
-	create_box( "Tide",1,SCREEN_WIDTH/2,USABLE_HEIGHT/3 );
-	create_box( "Wind",1,0,2*USABLE_HEIGHT/3 );
-	create_box( "Warning",1,SCREEN_WIDTH/2,2*USABLE_HEIGHT/3 );
+	// create_widget( forecast.location,2,0,0,forecast.overall );
+	// create_widget( "Swell",1,0,USABLE_HEIGHT/3,forecast.swell );
+	// create_widget( "Tide",1,SCREEN_WIDTH/2,USABLE_HEIGHT/3,forecast.tide );
+	// create_widget( "Wind",1,0,2*USABLE_HEIGHT/3,forecast.wind );
+	// create_widget( "Warning",1,SCREEN_WIDTH/2,2*USABLE_HEIGHT/3,forecast.warning );
 }
 
 /********** MAIN APP LOOP **********/
