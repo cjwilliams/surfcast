@@ -1,8 +1,9 @@
 #ifndef __DEFS_H
 #define __DEFS_H
 
-#define NUM_LOCATIONS = 5;
-#define NUM_FORECASTS = 1;
+#define NUM_LOCATIONS 5		/* This is bad, need to keep track of locations array size better */
+#define NUM_FORECASTS 24
+#define MAX_BUFFER_SIZE 256
 
 // typedef struct {
 // 	// struct tm time;
