@@ -9,33 +9,48 @@ function conditionIdFromString( conditionType ) {
 }
 
 function getDayFromString( str ) {
-	day = str.replace( /\d{4}\-\d(\d)?\-/,"" ).replace( /\s\d(\d)?$/,"" );
-	return( parseInt( day,10 ) );
+	return( parseInt( str.replace( /^[A-Za-z\s]*/,"" ).replace( /\s[0-9]{4}$/,"" ),10 ) );
 }
 
 function getHourFromString( str ) {
-	hour = str.replace( /\d{4}(\-\d(\d)?){2}\s/,"" );
-	return( parseInt( hour,10 ) - 7 );
+	var hour = 0;
+	if( str.match( '12AM' ) != null ) {
+		hour = -12;
+	}
+	else if( str.match( '12PM' ) != null ) {
+		hour = 0;
+	}
+	else if( str.match( /PM$/ ) != null ) {
+		hour = 12;
+	}
+	hour += parseInt( str.replace( /[AP][M]$/,"" ),10 );
+	
+	return( hour );
 }
 
 function fetchSurfcast( spotId, duration ) {
   var request = new XMLHttpRequest();
-	request.open( 'GET', 'http://api.spitcast.com/api/spot/forecast/'+spotId.toString()+'/', true );
+	request.open( 'GET', 'http://api.spitcast.com/api/spot/forecast/'+spotId.toString()+'/?dcat=week', true );
   request.onload = function( e ) {
     if ( request.readyState == 4 ) {
       if( request.status == 200 ) {
-        console.log( request.responseText );
         var response = JSON.parse( request.responseText );
+				
+        if ( response && response.length > 0 ) {
+          var data = [];
 
-        var condition, icon;
-
-				if ( response && response.length > 0 ) {
-          for( var i=0; i<duration; i++ ) {
+					for( var i=0; i<duration; i++ ) {
 						var result = response[ i ];
-						var array = [ getDayFromString( result.gmt ), getHourFromString( result.gmt ), conditionIdFromString( result.shape_full ), conditionIdFromString( result.shape_detail.swell ), conditionIdFromString( result.shape_detail.tide ), conditionIdFromString( result.shape_detail.wind ), result.size ];
+						console.log( [ result.spot_id, duration ] )
+						var array = [ getDayFromString( result.date ), getHourFromString( result.hour ), conditionIdFromString( result.shape_full ), conditionIdFromString( result.shape_detail.swell ), conditionIdFromString( result.shape_detail.tide ), conditionIdFromString( result.shape_detail.wind ), result.size ];
+						if( i%12 == 0 ) {
+							Pebble.sendAppMessage({ "location":result.spot_id, "data":data });
+							data.length = 0;
+						}
+						data.push( array );
 						console.log( array );
-						Pebble.sendAppMessage({ "location":result.spot_id, "data":array });
 					}
+					Pebble.sendAppMessage({ "location":result.spot_id, "data":data });	
         }
 
       } else {
