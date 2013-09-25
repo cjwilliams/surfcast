@@ -1,5 +1,3 @@
-// Determine how to stop requesting forecasts
-
 #include <pebble_os.h>
 #include <pebble_app.h>
 #include <pebble_fonts.h>
