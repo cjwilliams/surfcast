@@ -1,9 +1,9 @@
 {
 	"info": {
-		"app_id": "com.getpebble.comms",
+		"app_id": "com.getpebble.surfcast",
 		"app_uuid": "55FF5562-68BF-4BF8-83D4-44E6B09E0D59",
-		"app_name": "Pebble Comms",
-		"support_url": "http://www.getpebble.com",
+		"app_name": "Pebble Surfcast",
+		"support_url": "http://www.girlgrammer.com",
 		"version_label": "1.0.1",
 		"version_code": 1,
 		"app_key_type": "manual"
