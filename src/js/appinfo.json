@@ -1,0 +1,20 @@
+{
+"info": {
+    "app_id": "com.getpebble.pebble-surfcast",
+    "app_uuid": "506A7E90-0FCB-4FD1-9144-01AE7F10C915",
+    "app_name": "Pebble Surfcast",
+    "support_url": "http://www.getpebble.com",
+    "version_code": 1,
+    "version_label": "1.0.1",
+    "app_key_type": "manual"
+},
+  "app_keys": {
+		"location": 0,
+		"time": 1,
+		"overall": 2,
+		"swell": 3,
+		"tide": 4,
+		"wind": 5,
+		"size": 6
+  }
+}

@@ -5,6 +5,7 @@
 #include <pebble_app.h>
 #include <pebble_fonts.h>
 
+#include "forecast.h"
 
 #define MY_UUID { 0x50, 0x6A, 0x7E, 0x90, 0x0F, 0xCB, 0x4F, 0xD1, 0x91, 0x44, 0x01, 0xAE, 0x7F, 0x10, 0xC9, 0x15 }
 PBL_APP_INFO( MY_UUID,
@@ -25,20 +26,31 @@ static Window *window;
 static TextLayer *text_layer;
 static MenuLayer *menu_layer;
 static BitmapLayer *icon_layer;
-static GBitmap splash_bitmap;
 
-static GBitmap rating_icons[ NUM_RATINGS ];
+Forecast forecasts[5];
 
-typedef struct {
-	char *location;
-	int overall;
-	int swell;
-	int tide;
-	int wind;
-	int warning;
-} Forecast;
+static GBitmap splash_bitmap, icon_bitmap;
 
-static Forecast *forecast;
+static AppSync sync;
+static uint8_t sync_buffer[32];
+
+enum ForecastKeys {
+  LOCATION_KEY = 0x0,				// TUPLE_CSTRING
+	TIME_KEY = 0x1,
+  OVERALL_KEY = 0x2,  					// TUPLE_BYTE_ARRAY
+	SWELL_KEY = 0x3,
+	TIDE_KEY = 0x4,
+	WIND_KEY = 0x5,
+	SIZE_KEY = 0x6,
+};
+
+static uint32_t RATING_ICONS[] = {
+  RESOURCE_ID_POOR_COND,
+  RESOURCE_ID_PF_COND,
+  RESOURCE_ID_FAIR_COND,
+  RESOURCE_ID_FG_COND,
+	RESOURCE_ID_GOOD_COND
+};
 
 void create_menu_screen( void );
 void create_dashboard( Forecast *forecast );
@@ -60,125 +72,59 @@ void create_splash_screen( void ) {
 	text_layer = text_layer_create( GRect( 0,0,SCREEN_WIDTH,USABLE_HEIGHT/2 ) );
 	text_layer_set_text_color( text_layer, GColorWhite);
   text_layer_set_background_color( text_layer, GColorClear);
-	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
 	text_layer_set_text( text_layer, "Pebble Surfcast" );
 	text_layer_set_font( text_layer, fonts_get_system_font( FONT_KEY_GOTHIC_28_BOLD ) );
 	text_layer_set_text_alignment( text_layer, GTextAlignmentCenter );
 	text_layer_set_overflow_mode( text_layer, GTextOverflowModeWordWrap );
 	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
 	
-	icon_layer = bitmap_layer_create(GRect(0, USABLE_HEIGHT/2, SCREEN_WIDTH, 40));
-  bitmap_layer_set_bitmap( icon_layer, &splash_bitmap );
-  layer_add_child(window_get_root_layer( window ), bitmap_layer_get_layer( icon_layer ) );
+	icon_layer = bitmap_layer_create( GRect( 0, USABLE_HEIGHT/2, SCREEN_WIDTH, 40 ) );
+  gbitmap_init_with_resource( &splash_bitmap, RESOURCE_ID_SPLASH_ICON );
+	bitmap_layer_set_bitmap( icon_layer, &splash_bitmap );
+  layer_add_child( window_get_root_layer( window ), bitmap_layer_get_layer( icon_layer ) );
 	
 	text_layer = text_layer_create( GRect( 0,USABLE_HEIGHT-( 2*STATUS_BAR_HEIGHT ),SCREEN_WIDTH,STATUS_BAR_HEIGHT*2 ) );
 	text_layer_set_text_color( text_layer, GColorWhite);
   text_layer_set_background_color( text_layer, GColorClear);
-	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
 	text_layer_set_text( text_layer, "Data provided by Spitcast (www.spitcast.com)" );
 	text_layer_set_font( text_layer, fonts_get_system_font( FONT_KEY_GOTHIC_14 ) );
 	text_layer_set_text_alignment( text_layer, GTextAlignmentCenter );
 	text_layer_set_overflow_mode( text_layer, GTextOverflowModeWordWrap );
+	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
 	
 	window_set_click_config_provider( window, ( ClickConfigProvider ) splash_config_provider );
 }
 
+void destroy_splash_screen( void ) {
+	layer_destroy( window_get_root_layer( window ) );
+	bitmap_layer_destroy( icon_layer );
+	gbitmap_deinit( &splash_bitmap );
+	window_destroy( window );
+}
+
 /********** LOCATIONS MENU **********/
-static uint16_t menu_get_num_sections_callback( MenuLayer *menu_layer, void *data ) {
-  return 2;
-}
-
 static uint16_t menu_get_num_rows_callback( MenuLayer *menu_layer, uint16_t section_index, void *data ) {
-  switch ( section_index ) {
-    case 0:
-      return NUM_SPOTS;
-			break;
-    default:
-      return 0;
-			break;
-  }
-}
-
-static int16_t menu_get_header_height_callback( MenuLayer *menu_layer, uint16_t section_index, void *data ) {
-  return MENU_CELL_BASIC_HEADER_HEIGHT;
-}
-
-static void menu_draw_header_callback( GContext* ctx, const Layer *cell_layer, uint16_t section_index, void *data ) {
-  switch ( section_index ) {
-    case 0:
-      menu_cell_basic_header_draw( ctx, cell_layer, "Orange County" );
-      break;
-
-    case 1:
-      menu_cell_basic_header_draw( ctx, cell_layer, "Santa Cruz County" );
-      break;
-  }
+  return NUM_SPOTS;
 }
 
 static void menu_draw_row_callback( GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data ) {
-  switch ( cell_index->section ) {
-    case 0:
-      switch ( cell_index->row ) {
-        case 0:
-          menu_cell_basic_draw( ctx, cell_layer, "Spot 1", NULL, NULL );
-          break;
-
-        case 1:
-          menu_cell_basic_draw( ctx, cell_layer, "Spot 2", NULL, NULL );
-          break;
-
-        case 2:
-          menu_cell_basic_draw( ctx, cell_layer, "Spot 3", NULL, NULL );
-          break;
-				
-				case 3:
-					menu_cell_basic_draw( ctx, cell_layer, "Spot 4", NULL, NULL );
-          break;
-
-				case 4:
-				menu_cell_basic_draw( ctx, cell_layer, "Spot 5", NULL, NULL );
-        break;
-      }
-      break;
-
-    case 1:
-      switch ( cell_index->row ) {
-        case 0:
-          menu_cell_title_draw( ctx, cell_layer, "Something Else" );
-          break;
-      }
-  }
+	for( int i=0;i<5;i++ ) {
+		gbitmap_init_with_resource( &icon_bitmap, RATING_ICONS[ 0 ] );
+		menu_cell_basic_draw( ctx,cell_layer,"Spot 1",NULL,&icon_bitmap );
+		gbitmap_deinit( &icon_bitmap );
+	}
 }
 
 void menu_select_callback( MenuLayer *menu_layer, MenuIndex *cell_index, void *data ) {
-  switch ( cell_index->row ) {
-    case 0:
-  			create_dashboard( "Spot 1" );
-  			break;
-  		case 1:
-  			create_dashboard( "Spot 2" );
-  			break;
-  		case 2:
-  			create_dashboard( "Spot 3" );
-  			break;
-  		case 3:
-  			create_dashboard( "Spot 4" );
-  			break;
-  		case 4:
-  			create_dashboard( "Spot 5" );
-  			break;
-  }
+	create_dashboard( &forecasts[ cell_index->row ] );
 }
 
-void window_load ( Window *window ) {	
+void menu_load ( Window *window ) {	
 	Layer *window_layer = window_get_root_layer( window );
 	menu_layer = menu_layer_create( layer_get_frame( window_layer ) );
 	
 	menu_layer_set_callbacks( menu_layer, NULL, ( MenuLayerCallbacks ){
-    .get_num_sections = menu_get_num_sections_callback,
     .get_num_rows = menu_get_num_rows_callback,
-    .get_header_height = menu_get_header_height_callback,
-		.draw_header = menu_draw_header_callback,
     .draw_row = menu_draw_row_callback,
     .select_click = menu_select_callback,
   });
@@ -187,72 +133,123 @@ void window_load ( Window *window ) {
 	layer_add_child( window_layer, menu_layer_get_layer( menu_layer ) );
 }
 
-void window_unload( Window *window ) {
+void menu_unload( Window *window ) {
   menu_layer_destroy( menu_layer );
-
-  for (int i = 0; i < NUM_RATINGS; i++) {
-    gbitmap_deinit( &rating_icons[ i ] );
-  }
 }
 
 void create_menu_screen( void ) {
 	window = window_create();
 	
 	window_set_window_handlers( window, ( WindowHandlers ) {
-    .load = window_load,
-    .unload = window_unload,
+    .load = menu_load,
+    .unload = menu_unload,
   });
 	
 	window_stack_push( window, true );
 }
 
 /********** FORECAST **********/
-void create_widget( char *text, int width_units, int x, int y, int rating ) {
+char *getDescription( int value ) {
+	switch( value ) {
+		case 0: return "Poor"; break;
+		case 1: return "Poor-Fair"; break;
+		case 2: return "Fair"; break;
+		case 3: return "Fair-Good"; break;
+		case 4: return "Good"; break;
+		default: return "Error"; break;
+	}
+}
+
+void create_box( char *text, int width_units, int x, int y, int value ) {
+	icon_layer = bitmap_layer_create( GRect( x,y,( width_units * SCREEN_WIDTH )/2,USABLE_HEIGHT/3 ) );
+	gbitmap_init_with_resource( &icon_bitmap, RATING_ICONS[ value ]);
+  bitmap_layer_set_bitmap( icon_layer, &icon_bitmap );
+  layer_add_child( window_get_root_layer( window ), bitmap_layer_get_layer( icon_layer ) );
+
 	text_layer = text_layer_create( GRect( x,y,( width_units * SCREEN_WIDTH )/2,USABLE_HEIGHT/3 ) );
 	text_layer_set_text( text_layer, text );
 	
 	text_layer_set_text_alignment( text_layer, GTextAlignmentCenter );
+	text_layer_set_background_color( text_layer, GColorClear);
 	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
 	
-	rating_layer = text_layer_create( GRect( x,y+16,( width_units * SCREEN_WIDTH )/2,( USABLE_HEIGHT/3 )-16 ) );
-	
-	switch( rating ){
-		case 1: text_layer_set_text( rating_layer, "Poor" ); break;
-		case 2: text_layer_set_text( rating_layer, "Poor-Fair" ); break;
-		case 3: text_layer_set_text( rating_layer, "Fair" ); break;
-		case 4: text_layer_set_text( rating_layer, "Fair-Good" ); break;
-		case 5: text_layer_set_text( rating_layer, "Good" ); break;
-		case 0: text_layer_set_text( rating_layer, "!" ); break;
-		default: text_layer_set_text( rating_layer, "=)" ); break;
-	}
-	
-	text_layer_set_text_alignment( rating_layer, GTextAlignmentCenter );
-	text_layer_set_background_color( rating_layer, GColorBlack );
-	layer_add_child( text_layer_get_layer( text_layer ), text_layer_get_layer( rating_layer ) );	
+	text_layer = text_layer_create( GRect( x,y+( ( USABLE_HEIGHT/3 )-STATUS_BAR_HEIGHT ),( width_units * SCREEN_WIDTH )/2,USABLE_HEIGHT/3 ) );
+	text_layer_set_text( text_layer, getDescription( value ) );
+	text_layer_set_text_alignment( text_layer, GTextAlignmentCenter );
+	text_layer_set_font( text_layer, fonts_get_system_font( FONT_KEY_GOTHIC_14 ) );
+	text_layer_set_background_color( text_layer, GColorClear);
+	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
 }
 
 void create_dashboard( Forecast *forecast ) {
 	window = window_create();
 	window_stack_push( window, true /* Animated */ );
 	
-	// create_widget( forecast.location,2,0,0,forecast.overall );
-	// create_widget( "Swell",1,0,USABLE_HEIGHT/3,forecast.swell );
-	// create_widget( "Tide",1,SCREEN_WIDTH/2,USABLE_HEIGHT/3,forecast.tide );
-	// create_widget( "Wind",1,0,2*USABLE_HEIGHT/3,forecast.wind );
-	// create_widget( "Warning",1,SCREEN_WIDTH/2,2*USABLE_HEIGHT/3,forecast.warning );
+	create_box( forecast->location,2,0,0, forecast->overall );
+	create_box( "Swell",1,0,USABLE_HEIGHT/3, forecast->swell );
+	create_box( "Tide",1,SCREEN_WIDTH/2,USABLE_HEIGHT/3, forecast->tide );
+	create_box( "Wind",1,0,2*USABLE_HEIGHT/3, forecast->wind );
+	create_box( "Size",1,SCREEN_WIDTH/2,2*USABLE_HEIGHT/3, forecast->size );
 }
 
 /********** MAIN APP LOOP **********/
+static void sync_error_callback(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "App Message Sync Error: %d", app_message_error);
+}
+
+static void sync_tuple_changed_callback(const uint32_t key, const Tuple* new_tuple, const Tuple* old_tuple, void* context) {
+  switch (key) {
+    case LOCATION_KEY:
+    	text_layer_set_text( text_layer, new_tuple->value->cstring );
+			break;
+
+    case OVERALL_KEY:
+      // App Sync keeps the new_tuple around, so we may use it directly
+			gbitmap_deinit( &icon_bitmap );
+			gbitmap_init_with_resource( &icon_bitmap, RATING_ICONS[ new_tuple->value->uint8 ]);
+      break;
+  }
+}
+
+static void send_cmd() {
+  Tuplet value = TupletInteger( 1,1 );
+
+  DictionaryIterator *iter;
+  app_message_out_get( &iter );
+
+  if ( iter == NULL ) {
+    return;
+  }
+
+  dict_write_tuplet( iter, &value );
+  dict_write_end( iter );
+
+  app_message_out_send();
+  app_message_out_release();
+}
+
 void handle_init( void ) {
-	gbitmap_init_with_resource( &splash_bitmap, RESOURCE_ID_SPLASH_ICON );
+	app_message_open(64, 64);
 	
-	create_splash_screen();
-	// persist_read_data( 1, sizeof( forecast_array ), forecast_array );
+	uint8_t byte_array[] = { 3,3,2,4,2 };
+	Tuplet initial_values[] = {
+		TupletCString( LOCATION_KEY, "Pebble Beach" ),
+		TupletCString( TIME_KEY, "2013-09-16 1" ),
+		TupletInteger( OVERALL_KEY, 4 ),
+//    TupletBytes( DATA_KEY, byte_array, 5 /* Length */ )
+  };
+
+	for(int i=0;i<5;i++){ forecasts[i].overall = forecasts[i].swell = forecasts[i].tide = forecasts[i].wind = 4; forecasts[i].location="Location"; forecasts[i].size=2; }
+
+  // send_cmd();
+
+  app_sync_init( &sync, sync_buffer, sizeof( sync_buffer ), initial_values, ARRAY_LENGTH( initial_values ), sync_tuple_changed_callback, sync_error_callback, NULL );
+	
+	// create_splash_screen();
 }
 
 void handle_deinit( void ) {
-	window_destroy( window );
-	// persist_write_data( 1, sizeof( forecast_array ), forecast_array );
+	destroy_splash_screen();
 }
 
 int main( void ) {
