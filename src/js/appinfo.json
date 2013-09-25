@@ -9,16 +9,16 @@
 		"app_key_type": "manual"
 	},
 	"app_keys": {
-		"request": 0,
-		"data": 1,
-		"hour": 2,
-		"overall": 3,
-		"swell": 4,
-		"tide": 5,
-		"wind": 6,
-		"swell_size": 7,
-		"tide_height": 8,
-		"location": 9,
-		"limit": 10
+		"spot": 0,
+		"county": 1,
+		"date": 2,
+		"hour": 3,
+		"general": 4,
+		"swell": 5,
+		"tide": 6,
+		"wind": 7,
+		"swell_size": 8,
+		"tide_height": 9,
+		"request_status": 15
 	}
 }
