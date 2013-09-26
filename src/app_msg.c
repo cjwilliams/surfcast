@@ -28,6 +28,8 @@ enum {
 };
 
 static void in_received_handler( DictionaryIterator *received, void *context ) {
+	APP_LOG( APP_LOG_LEVEL_DEBUG, "Inbound Message Received Handler" );
+	
 	Tuple *tuple;
 	
 	tuple = dict_find( received, REQUEST_STATUS_KEY );
@@ -62,24 +64,34 @@ static void in_received_handler( DictionaryIterator *received, void *context ) {
 		);
 		return;
 	}
-	test_print( "Unexpected path" );
+	APP_LOG( APP_LOG_LEVEL_WARNING, "Expecting Forecast or TideForecast, Got Something Else" );
 }
 
-static void in_dropped_handler( void *context, AppMessageResult reason ) {
+static void in_dropped_handler( void *context, AppMessageResult reason ) {	
+	APP_LOG( APP_LOG_LEVEL_WARNING, "Inbound Message Dropped Handler" );
+	debug_reason( reason );
 	// Does this do anything? Seems to auto retry after being called...?
 }
 
 static void out_sent_handler( DictionaryIterator *sent, void *context ) {
+	APP_LOG( APP_LOG_LEVEL_DEBUG_VERBOSE, "Outbound Message Sent Handler" );
 	// Does this do anything?
 }
 
 static void out_failed_handler( DictionaryIterator *failed, AppMessageResult reason, void *context ) {
+	APP_LOG( APP_LOG_LEVEL_WARNING, "Outbound Message Failed Handler" );
+	debug_reason( reason );
 	// Does this do anything? Seems to auto retry after being called...?
 }
 
 static void out_next_handler( AppMessageResult result, void *context ) {
+	APP_LOG( APP_LOG_LEVEL_DEBUG, "Outbound Message Next Handler" );
+	
 	if( done == 1 ){ return; } 
-	else if( result != APP_MSG_OK ){ get_next_forecast( 2 ); } 
+	else if( result != APP_MSG_OK ){ 
+		get_next_forecast( 2 ); 
+		debug_reason( result );
+	} 
 	else { get_next_forecast( 1 ); }
 }
 
@@ -113,14 +125,17 @@ void app_message_deinit( void ) {
 
 void get_next_forecast( uint8_t status_flag ) {
 	AppMessageResult reason;
+	DictionaryResult result;
 	DictionaryIterator *iter;
 	
 	if ( ( reason = app_message_out_get( &iter ) ) != APP_MSG_OK ) {
+		debug_reason( reason );
 		set_stopped_flag();
 		return;
 	}
 
-	if ( dict_write_uint8( iter, REQUEST_STATUS_KEY, status_flag ) != DICT_OK ) {
+	if ( ( result = dict_write_uint8( iter, REQUEST_STATUS_KEY, status_flag ) ) != DICT_OK ) {
+		debug_dictionary_result( result );
 		set_stopped_flag();
 		return;
 	}
