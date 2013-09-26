@@ -4,24 +4,18 @@
 
 #include "forecast.h"
 #include "utils.h"
+#include "constants.h"
 
-static uint32_t CONDITION_ICONS[] = {
-  RESOURCE_ID_POOR_COND,
-  RESOURCE_ID_PF_COND,
-  RESOURCE_ID_FAIR_COND,
-  RESOURCE_ID_FG_COND,
-	RESOURCE_ID_GOOD_COND
-};
+static Forecast forecasts[ NUM_FORECASTS ];
+static TideForecast tide_forecasts[ NUM_FORECASTS ];
+static Location locations[ NUM_SPOTS ];
 
-Forecast forecasts[ 24 ];
-TideForecast tide_forecasts[ 24 ];
-
-int next_forecast = 0;
-int next_tide_forecast = 0;
+static int next_forecast = 0;
+static int next_tide_forecast = 0;
+static int next_location = 0;
 
 Forecast *create_forecast( char *spot_name, char *county_name, int date, int hour, int general, int swell, int tide, int wind, char swell_size ){
 	forecasts[ next_forecast ].spot_name = spot_name;
-	forecasts[ next_forecast ].county_name = county_name;
 	forecasts[ next_forecast ].date = date;
 	forecasts[ next_forecast ].hour = hour;
 	forecasts[ next_forecast ].conditions[0] = general;
@@ -29,6 +23,12 @@ Forecast *create_forecast( char *spot_name, char *county_name, int date, int hou
 	forecasts[ next_forecast ].conditions[2] = tide;
 	forecasts[ next_forecast ].conditions[3] = wind;
 	forecasts[ next_forecast ].swell_size = swell_size;
+	
+	// if( /* locations does not contain spot_name */ ){
+	// 	/* add spot_name to locations */
+	// 	/* add county_name to locations */
+	// 	next_location++;
+	// }
 
 	return( &forecasts[ next_forecast++ ] );
 }
@@ -42,8 +42,23 @@ TideForecast *create_tide_forecast( char *county_name, int date, int hour, float
 	return( &tide_forecasts[ next_tide_forecast++ ] ); 
 }
 
-void print_sample_forecast(){
-	Forecast *sample = forecasts;
-	
-	test_print( sample->spot_name );
+Forecast *get_current_forecast_at_location( int indexed_location ){
+	return( &forecasts[ ( ( locations[ indexed_location ] ).current_index ) ] );
+}
+
+int get_conditions( Forecast *forecast, int category ){
+	return( forecast->conditions[ category ] );
+}
+
+char *get_location( Forecast *forecast ){
+	return forecast->spot_name;
+}
+
+char *get_county( Forecast *forecast ){
+	// locations.where(name == forecast.spot_name)
+	return((char *) '0' );
+}
+
+char get_current_swell_size( Forecast *forecast ){
+	return( forecast->swell_size );
 }
