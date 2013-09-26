@@ -1,3 +1,5 @@
+// Make sure "forecast" and "location" are not globals
+
 #include <pebble_os.h>
 #include <pebble_app.h>
 #include <pebble_fonts.h>
