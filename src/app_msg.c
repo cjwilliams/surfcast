@@ -7,7 +7,6 @@
 #include "forecast.h"
 #include "utils.h"
 
-static uint8_t buffer[ MAX_BUFFER_SIZE ];
 static int done = 0;
 
 enum {
