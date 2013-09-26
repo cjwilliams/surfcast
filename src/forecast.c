@@ -9,6 +9,7 @@
 static Forecast forecasts[ NUM_FORECASTS ];
 static TideForecast tide_forecasts[ NUM_FORECASTS ];
 static Location locations[ NUM_SPOTS ];
+float tide_heights[ 10 ];
 
 static int next_forecast = 0;
 static int next_tide_forecast = 0;
@@ -42,23 +43,36 @@ TideForecast *create_tide_forecast( char *county_name, int date, int hour, float
 	return( &tide_forecasts[ next_tide_forecast++ ] ); 
 }
 
-Forecast *get_current_forecast_at_location( int indexed_location ){
-	return( &forecasts[ ( ( locations[ indexed_location ] ).current_index ) ] );
+static Forecast *get_current_forecast( Location *location ){
+	return &forecasts[ location->current_index ];
 }
 
-int get_conditions( Forecast *forecast, int category ){
-	return( forecast->conditions[ category ] );
+Location *get_location( int indexed_location ){
+	return &locations[ indexed_location ];
 }
 
-char *get_location( Forecast *forecast ){
-	return forecast->spot_name;
+char *get_county( Location *location ){
+	return location->county;
 }
 
-char *get_county( Forecast *forecast ){
-	// locations.where(name == forecast.spot_name)
-	return((char *) '0' );
+char *get_spot_name( Location *location ){
+	return location->name;
 }
 
-char get_current_swell_size( Forecast *forecast ){
+int get_current_conditions( Location *location, int condition_type ){
+	Forecast *forecast = get_current_forecast( location );
+	return( forecast->conditions[ condition_type ] );
+}
+
+char get_current_swell_size( Location *location ){
+	Forecast *forecast = get_current_forecast( location );
 	return( forecast->swell_size );
+}
+
+// This could probably be memory-optimized by using ints, since all we're doing is drawing the relationships between points
+float *get_tide_heights( Location *location ){
+	Forecast *forecast = get_current_forecast( location );
+	
+	/* More stuff here */
+	return &tide_heights[ 0 ];
 }

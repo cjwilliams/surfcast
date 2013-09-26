@@ -1,5 +1,3 @@
-// Double check "forecast" isn't a global somewhere
-
 #include <pebble_os.h>
 #include <pebble_app.h>
 #include <pebble_fonts.h>
@@ -77,7 +75,7 @@ void forecast_unload( Window *window ) {
 	layer_destroy( window_get_root_layer( window ) ); // Double check this is sufficient
 }
 
-void create_forecast_display( Forecast *forecast ) {
+void create_forecast_display( Location *location ) {
 	window = window_create();
 	
 	window_set_window_handlers( window, (WindowHandlers){
@@ -85,7 +83,7 @@ void create_forecast_display( Forecast *forecast ) {
     .unload = forecast_unload,
   });
 
-	window_stack_push( window, true /* Animated */ );
+	window_stack_push( window, true );
 }
 
 /********** LOCATIONS MENU **********/
@@ -94,13 +92,12 @@ static uint16_t menu_get_num_rows_callback( MenuLayer *menu_layer, uint16_t sect
 }
 
 static void menu_draw_row_callback( GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data ) {
-	Forecast *forecast = get_current_forecast_at_location( cell_index->row );
-	menu_cell_basic_draw( ctx, cell_layer, get_location( forecast ), get_county( forecast ), &condition_icons[ get_conditions( forecast, 0 ) ] );
+	Location *location = get_location( cell_index->row );
+	menu_cell_basic_draw( ctx, cell_layer, get_spot_name( location ), get_county( location ), &condition_icons[ get_current_conditions( location, OVERALL ) ] );
 }
 
 static void menu_select_callback( MenuLayer *menu_layer, MenuIndex *cell_index, void *data ) {
-	Forecast *forecast = get_current_forecast_at_location( cell_index->row );
-	create_forecast_display( forecast );
+	create_forecast_display( get_location( cell_index->row ) );
 }
 
 static void menu_load ( Window *window ) {	
