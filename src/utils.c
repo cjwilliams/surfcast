@@ -4,11 +4,10 @@
 
 #include "utils.h"
 #include "constants.h"
+#include "app_msg.h"
 
 static AppTimer *timer;
 static int stopped = 0;
-
-extern void get_next_forecast( uint8_t flag );
 
 void set_stopped_flag( void) {
 	stopped = 1;
