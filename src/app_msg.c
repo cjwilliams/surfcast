@@ -8,7 +8,7 @@
 #include "utils.h"
 
 static uint8_t buffer[ MAX_BUFFER_SIZE ];
-int done = 0;
+static int done = 0;
 
 enum {
 	REQUEST_STATUS_KEY = 0xF,

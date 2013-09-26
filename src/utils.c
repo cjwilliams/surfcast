@@ -2,8 +2,8 @@
 #include <pebble_app.h>
 #include <pebble_fonts.h>
 
-#include "constants.h"
 #include "utils.h"
+#include "constants.h"
 
 static AppTimer *timer;
 static int stopped = 0;
