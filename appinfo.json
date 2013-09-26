@@ -1,0 +1,58 @@
+{
+  "uuid": "55ff5562-68bf-4bf8-83d4-44e6b09e0d59",
+  "shortName": "Pebble Surfcast",
+  "longName": "Pebble Surfcast",
+  "companyName": "Girlgrammer",
+  "versionCode": 1,
+  "versionLabel": "1.0.0",
+  "watchapp": {
+    "watchface": false
+  },
+  "appKeys": {
+    "tide": 6,
+    "hour": 3,
+    "tide_height": 9,
+    "swell": 5,
+    "spot": 0,
+    "general": 4,
+    "county": 1,
+    "request_status": 15,
+    "swell_size": 8,
+    "date": 2,
+    "wind": 7
+  },
+  "resources": {
+    "media": [
+      {
+        "type": "png",
+        "name": "SPLASH_ICON",
+        "file": "images/surfboard.png"
+      },
+      {
+        "type": "png",
+        "name": "POOR_COND",
+        "file": "images/poor.png"
+      },
+      {
+        "type": "png",
+        "name": "PF_COND",
+        "file": "images/pf.png"
+      },
+      {
+        "type": "png",
+        "name": "FAIR_COND",
+        "file": "images/fair.png"
+      },
+      {
+        "type": "png",
+        "name": "FG_COND",
+        "file": "images/fg.png"
+      },
+      {
+        "type": "png",
+        "name": "GOOD_COND",
+        "file": "images/good.png"
+      }
+    ]
+  }
+}
