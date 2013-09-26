@@ -2,10 +2,9 @@
 // pebble-js-app.js
 //
 // This file provides the following functionality:
-// * Creates a unique list of the counties represented by the chosen spots
 // * On receipt of forecast request from watch, queries the Spitcast API for forecast data for the duration requested
 // * Also queries the Spitcast API for tide height data for the same duration in the counties represented by the chosen spots
-// * Sends JSON blobs with forecast and tide height data to watch using Pebble's send AppMessage
+// * Sends JSON blobs with forecast and tide height data to watch using Pebble's sendAppMessage
 //
 
 // TODO: Double check variable scopes!!!
@@ -163,9 +162,9 @@ PebbleEventListener.addEventListener( "appmessage",
 // Removed "if( myTides.length > 0 || myForecasts.length >0 )" from last else because the extra +1 iteration seems to be necessary to signal the watch app
 
 // This listener is not currently used -- leaving for possible future improvements
-PebbleEventListener.addEventListener( "webviewclosed",
-                                     function(e) {
-                                     console.log( "webview closed" );
-                                     console.log( e.type );
-                                     console.log( e.response );
-                                     });
+// PebbleEventListener.addEventListener( "webviewclosed",
+//                                      function(e) {
+//                                      console.log( "webview closed" );
+//                                      console.log( e.type );
+//                                      console.log( e.response );
+//                                      });
