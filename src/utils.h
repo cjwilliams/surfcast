@@ -1,6 +1,8 @@
 #ifndef __UTILS_H
 #define __UTILS_H
 
+bool set_current_datetime( void );
+
 void start_timer();
 void stop_timer();
 

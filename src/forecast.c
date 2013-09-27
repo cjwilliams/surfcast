@@ -74,12 +74,12 @@ void update_current_indices( void ){
 	
 	for( int i=0; i<NUM_TOTAL_FORECASTS; i++ ){
 		if( ( forecasts[ i ].date == date ) && ( forecasts[ i ].hour == hour ) ){
-			forecasts[ i ].location->current_index = i;
+			( forecasts[ i ].location )->current_index = i;
 		}
 	}
 	for( int j=0; j<NUM_TOTAL_FORECASTS; j++ ){
 		if( ( tide_forecasts[ j ].date == date ) && ( tide_forecasts[ j ].hour == hour ) ){
-			tide_forecasts[ j ].location->current_tide_index = j;
+			( tide_forecasts[ j ].location )->current_tide_index = j;
 		}
 	}
 }
@@ -120,6 +120,7 @@ static Forecast *get_current_forecast( Location *location ){
 
 int get_current_conditions( Location *location, int condition_type ){
 	Forecast *forecast = get_current_forecast( location );
+	APP_LOG( APP_LOG_LEVEL_DEBUG, "FORECAST DATE: %u, TIME: %u, CONDITION: %u", forecast->date, forecast->hour, forecast->conditions[ condition_type ] );
 	return( forecast->conditions[ condition_type ] );
 }
 

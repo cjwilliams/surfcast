@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "constants.h"
 #include "app_msg.h"
+#include "forecast.h"
 
 static AppTimer *timer;
 static int stopped = 0;
@@ -12,14 +13,22 @@ static int date;
 static int hour;
 
 // ========== Timekeeping ==========
-static void set_current_datetime( void ){
+bool set_current_datetime( void ){
 	time_t now = time( NULL );
   struct tm *current_time = localtime( &now );
 	
-	date = current_time->tm_mday;
-	hour = current_time->tm_hour;
+	if( date != current_time->tm_mday || hour != current_time->tm_hour ){
+		date = current_time->tm_mday;
+		hour = current_time->tm_hour;
+		
+		APP_LOG( APP_LOG_LEVEL_INFO, "Setting current date/time to %u(date) %u(time)", date, hour );
+		
+		update_current_indices();
+
+		return true;
+	}
 	
-	APP_LOG( APP_LOG_LEVEL_INFO, "Setting current date/time to %u(date) %u(time)", date, hour );
+	return false;
 }
 
 void set_stopped_flag( void) {
