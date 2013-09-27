@@ -4,6 +4,9 @@
 void start_timer();
 void stop_timer();
 
+int get_current_date( void );
+int get_current_hour( void );
+
 void set_stopped_flag();
 void reset_stopped_flag();
 

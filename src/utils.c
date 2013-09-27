@@ -8,6 +8,19 @@
 
 static AppTimer *timer;
 static int stopped = 0;
+static int date;
+static int hour;
+
+// ========== Timekeeping ==========
+static void set_current_datetime( void ){
+	time_t now = time( NULL );
+  struct tm *current_time = localtime( &now );
+	
+	date = current_time->tm_mday;
+	hour = current_time->tm_hour;
+	
+	APP_LOG( APP_LOG_LEVEL_INFO, "Setting current date/time to %u(date) %u(time)", date, hour );
+}
 
 void set_stopped_flag( void) {
 	stopped = 1;
@@ -23,6 +36,8 @@ static void watchdog_timer_check( void *context ) {
 		reset_stopped_flag();
 		get_next_forecast( 1 );
 	}
+	
+	set_current_datetime();
 	start_timer();
 }
 
@@ -34,6 +49,14 @@ void start_timer( void ) {
 void stop_timer( void ) {
 	APP_LOG(APP_LOG_LEVEL_DEBUG, "Watchdog Timer Stopped");
 	app_timer_cancel( timer );
+}
+
+int get_current_date( void ){
+	return date;
+}
+
+int get_current_hour( void ){
+	return hour;
 }
 
 // ========== Debugging ==========
