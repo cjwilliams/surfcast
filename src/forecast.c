@@ -17,7 +17,7 @@ static int next_forecast = 0;
 static int next_tide_forecast = 0;
 static int next_location = 0;
 
-Forecast *create_forecast( char *spot_name, char *county_name, int date, int hour, int general, int swell, int tide, int wind, char swell_size ){
+Forecast *create_forecast( char *spot_name, char *county_name, int date, int hour, int general, int swell, int tide, int wind, char *swell_size ){
 	forecasts[ next_forecast ].spot_name = spot_name;
 	forecasts[ next_forecast ].date = date;
 	forecasts[ next_forecast ].hour = hour;
@@ -66,7 +66,7 @@ int get_current_conditions( Location *location, int condition_type ){
 	return( forecast->conditions[ condition_type ] );
 }
 
-char get_current_swell_size( Location *location ){
+char *get_current_swell_size( Location *location ){
 	Forecast *forecast = get_current_forecast( location );
 	return( forecast->swell_size );
 }

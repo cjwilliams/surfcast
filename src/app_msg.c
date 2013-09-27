@@ -28,7 +28,7 @@ enum {
 };
 
 static void in_received_handler( DictionaryIterator *received, void *context ) {
-	APP_LOG( APP_LOG_LEVEL_DEBUG, "Inbound Message Received Handler" );
+	APP_LOG( APP_LOG_LEVEL_DEBUG_VERBOSE, "Inbound Message Received Handler" );
 	
 	Tuple *tuple;
 	
@@ -49,7 +49,18 @@ static void in_received_handler( DictionaryIterator *received, void *context ) {
 			dict_find( received, SWELL_KEY )->value->uint32,
 			dict_find( received, TIDE_KEY )->value->uint32,
 			dict_find( received, WIND_KEY )->value->uint32,
-			(char)( dict_find( received, SWELL_SIZE_KEY )->value->cstring[0] )
+			dict_find( received, SWELL_SIZE_KEY )->value->cstring
+		);
+		APP_LOG( APP_LOG_LEVEL_DEBUG, "SPOT: %s, DATE: %lu, HOUR: %lu, GENERAL: %lu, SWELL: %lu, TIDE: %lu, WIND: %lu, SWELL_SIZE: %s", 
+			tuple->value->cstring,
+			// dict_find( received, COUNTY_KEY )->value->cstring, 
+			dict_find( received, DATE_KEY )->value->uint32,
+			dict_find( received, HOUR_KEY )->value->uint32,
+			dict_find( received, GENERAL_KEY )->value->uint32,
+			dict_find( received, SWELL_KEY )->value->uint32,
+			dict_find( received, TIDE_KEY )->value->uint32,
+			dict_find( received, WIND_KEY )->value->uint32,
+			dict_find( received, SWELL_SIZE_KEY )->value->cstring
 		);
 		return;
 	}
@@ -60,7 +71,13 @@ static void in_received_handler( DictionaryIterator *received, void *context ) {
 			dict_find( received, COUNTY_KEY )->value->cstring, 
 			dict_find( received, DATE_KEY )->value->uint32,
 			dict_find( received, HOUR_KEY )->value->uint32,
-			( (int)tuple->value->data )/100.0
+			( tuple->value->uint32 )/100.0
+		);
+		APP_LOG( APP_LOG_LEVEL_DEBUG, "COUNTY: %s, DATE: %lu, HOUR: %lu, TIDE_HEIGHT: %lu", 
+			dict_find( received, COUNTY_KEY )->value->cstring, 
+			dict_find( received, DATE_KEY )->value->uint32,
+			dict_find( received, HOUR_KEY )->value->uint32,
+			tuple->value->uint32
 		);
 		return;
 	}

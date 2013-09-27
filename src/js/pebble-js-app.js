@@ -65,7 +65,7 @@ function fetchSpotConditions( spot, duration ) {
 			if( response && response.length > 0 ) {
 				for( var i=0; i<duration; i++ ) {
 					var result = response[ i ];
-					myForecasts.push({ "spot": result.spot_name.toString(), "county": spot.county, "date": getDayFromString( result.date ), "time": getHourFromString( result.hour ), "general": conditionIdFromString( result.shape_full ), "swell": conditionIdFromString( result.shape_detail.swell ), "tide": conditionIdFromString( result.shape_detail.tide ), "wind": conditionIdFromString( result.shape_detail.wind ), "swell_size": result.size.toString() /* No support for snprintf in app */ });
+					myForecasts.push({ "spot": result.spot_name.toString(), "county": spot.county, "date": getDayFromString( result.date ), "hour": getHourFromString( result.hour ), "general": conditionIdFromString( result.shape_full ), "swell": conditionIdFromString( result.shape_detail.swell ), "tide": conditionIdFromString( result.shape_detail.tide ), "wind": conditionIdFromString( result.shape_detail.wind ), "swell_size": result.size.toString() /* No support for snprintf in app */ });
 				}
 			}
 		}
