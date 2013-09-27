@@ -33,7 +33,7 @@ static void in_received_handler( DictionaryIterator *received, void *context ) {
 	Tuple *tuple;
 	
 	tuple = dict_find( received, REQUEST_STATUS_KEY );
-	if( (int)tuple->value->uint32 == 0 ){ 
+	if( 0 == (int)tuple->value->uint32 ){ 
 		done = 1; 
 		return;
 	}
@@ -104,7 +104,7 @@ static void out_failed_handler( DictionaryIterator *failed, AppMessageResult rea
 static void out_next_handler( AppMessageResult result, void *context ) {
 	APP_LOG( APP_LOG_LEVEL_DEBUG, "Outbound Message Next Handler" );
 	
-	if( done == 1 ){ return; } 
+	if( 1 == done ){ return; } 
 	else if( result != APP_MSG_OK ){ 
 		get_next_forecast( 2 ); 
 		debug_reason( result );
