@@ -71,7 +71,7 @@ static void in_received_handler( DictionaryIterator *received, void *context ) {
 			dict_find( received, COUNTY_KEY )->value->cstring, 
 			dict_find( received, DATE_KEY )->value->uint32,
 			dict_find( received, HOUR_KEY )->value->uint32,
-			( tuple->value->uint32 )/100.0
+			tuple->value->uint32
 		);
 		APP_LOG( APP_LOG_LEVEL_DEBUG, "COUNTY: %s, DATE: %lu, HOUR: %lu, TIDE_HEIGHT: %lu", 
 			dict_find( received, COUNTY_KEY )->value->cstring, 

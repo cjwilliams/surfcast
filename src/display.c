@@ -102,12 +102,12 @@ static uint16_t menu_get_num_rows_callback( MenuLayer *menu_layer, uint16_t sect
 }
 
 static void menu_draw_row_callback( GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data ) {
-	Location *location = get_location( cell_index->row );
+	Location *location = get_location_by_index( cell_index->row );
 	menu_cell_basic_draw( ctx, cell_layer, get_spot_name( location ), get_county( location ), condition_icons[ get_current_conditions( location, OVERALL ) ] );
 }
 
 static void menu_select_callback( MenuLayer *menu_layer, MenuIndex *cell_index, void *data ) {
-	create_forecast_display( get_location( cell_index->row ) );
+	create_forecast_display( get_location_by_index( cell_index->row ) );
 }
 
 static void menu_load ( Window *window ) {	

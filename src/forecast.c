@@ -4,6 +4,9 @@
 #include <pebble_app.h>
 #include <pebble_fonts.h>
 
+#include <stdlib.h>
+#include <time.h>
+
 #include "forecast.h"
 #include "utils.h"
 #include "constants.h"
@@ -17,22 +20,32 @@ static int next_forecast = 0;
 static int next_tide_forecast = 0;
 static int next_location = 0;
 
+Location *create_location( char *spot_name, char *county ){
+	locations[ next_location ].current_index = -1;
+	locations[ next_location ].current_tide_index = -1;
+	strncpy( locations[ next_location ].name, spot_name, sizeof( locations[ next_location ].name ) );
+	strncpy( locations[ next_location ].county, county, sizeof( locations[ next_location ].county ) );
+	
+	APP_LOG( APP_LOG_LEVEL_DEBUG, "Creating location %s",locations[ next_location ].name );
+	return( &locations[ next_location++ ] );
+}
+
 Forecast *create_forecast( char *spot_name, char *county_name, int date, int hour, int general, int swell, int tide, int wind, char *swell_size ){
 	if( next_forecast < NUM_TOTAL_FORECASTS ){
-		forecasts[ next_forecast ].spot_name = spot_name;
+		Location *location;
+
 		forecasts[ next_forecast ].date = date;
 		forecasts[ next_forecast ].hour = hour;
 		forecasts[ next_forecast ].conditions[0] = general;
 		forecasts[ next_forecast ].conditions[1] = swell;
 		forecasts[ next_forecast ].conditions[2] = tide;
 		forecasts[ next_forecast ].conditions[3] = wind;
-		forecasts[ next_forecast ].swell_size = swell_size;
-
-		// if( /* locations does not contain spot_name */ ){
-		// 	/* add spot_name to locations */
-		// 	/* add county_name to locations */
-		// 	next_location++;
-		// }
+		strncpy( forecasts[ next_forecast ].swell_size, swell_size, sizeof( forecasts[ next_forecast ].swell_size ) );
+	
+		if( ( location = get_location_by_spot( spot_name ) ) == NULL ){
+			location = create_location( spot_name, county_name );
+		}
+		forecasts[ next_forecast ].location = location;
 	}
 	else{
 		APP_LOG(APP_LOG_LEVEL_ERROR, "Almost had a Buffer Overflow");
@@ -41,12 +54,12 @@ Forecast *create_forecast( char *spot_name, char *county_name, int date, int hou
 	return( &forecasts[ next_forecast++ ] );
 }
 
-TideForecast *create_tide_forecast( char *county_name, int date, int hour, float tide_height ){
+TideForecast *create_tide_forecast( char *county_name, int date, int hour, int tide_height ){
 	if( next_forecast < NUM_TOTAL_FORECASTS ){
-		tide_forecasts[ next_tide_forecast ].county_name = county_name;
 		tide_forecasts[ next_tide_forecast ].date = date;
 		tide_forecasts[ next_tide_forecast ].hour = hour;
-		tide_forecasts[ next_tide_forecast ].tide_height = tide_height;
+		tide_forecasts[ next_tide_forecast ].tide_height = tide_height;	
+		tide_forecasts[ next_tide_forecast ].location = get_location_by_county( county_name );	
 	}
 	else{
 		APP_LOG(APP_LOG_LEVEL_ERROR, "Almost had a Buffer Overflow");
@@ -55,12 +68,42 @@ TideForecast *create_tide_forecast( char *county_name, int date, int hour, float
 	return( &tide_forecasts[ next_tide_forecast++ ] ); 
 }
 
-static Forecast *get_current_forecast( Location *location ){
-	return &forecasts[ location->current_index ];
+void update_current_indices( void ){
+	int date = get_current_date();
+	int hour = get_current_hour();
+	
+	for( int i=0; i<NUM_TOTAL_FORECASTS; i++ ){
+		if( ( forecasts[ i ].date == date ) && ( forecasts[ i ].hour == hour ) ){
+			forecasts[ i ].location->current_index = i;
+		}
+	}
+	for( int j=0; j<NUM_TOTAL_FORECASTS; j++ ){
+		if( ( tide_forecasts[ j ].date == date ) && ( tide_forecasts[ j ].hour == hour ) ){
+			tide_forecasts[ j ].location->current_tide_index = j;
+		}
+	}
 }
 
-Location *get_location( int indexed_location ){
+Location *get_location_by_index( int indexed_location ){
 	return &locations[ indexed_location ];
+}
+
+Location *get_location_by_spot( char *name ){
+	for( int i=0; i<NUM_SPOTS; i++ ){
+		if( ( strcmp( name, locations[ i ].name ) == 0 ) ){
+			return( &locations[ i ] );
+		}
+	}
+	return NULL;
+}
+
+Location *get_location_by_county( char *county ){
+	for( int i=0; i<NUM_SPOTS; i++ ){
+		if( ( strcmp( county, locations[ i ].county ) == 0 ) ){
+			return( &locations[ i ] );
+		}
+	}
+	return NULL;
 }
 
 char *get_county( Location *location ){
@@ -69,6 +112,10 @@ char *get_county( Location *location ){
 
 char *get_spot_name( Location *location ){
 	return location->name;
+}
+
+static Forecast *get_current_forecast( Location *location ){
+	return &forecasts[ location->current_index ];
 }
 
 int get_current_conditions( Location *location, int condition_type ){
@@ -82,9 +129,9 @@ char *get_current_swell_size( Location *location ){
 }
 
 // This could probably be memory-optimized by using ints, since all we're doing is drawing the relationships between points
-float *get_tide_heights( Location *location ){
-	Forecast *forecast = get_current_forecast( location );
-	
-	/* More stuff here */
-	return &tide_heights[ 0 ];
-}
+// int get_tide_heights( Location *location ){
+// 	Forecast *forecast = get_current_forecast( location );
+// 	
+// 	/* More stuff here */
+// 	return &tide_heights[ 0 ];
+// }
