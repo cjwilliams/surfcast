@@ -40,6 +40,8 @@ static BitmapLayer *icon_layer;
 static GBitmap *logo_bitmap;
 static GBitmap *condition_icons[ NUM_CONDITIONS ];
 
+Location *drawable_location;
+
 /********** FORECAST **********/
 char *getDescription( int value ) {
 	switch( value ) {
@@ -59,8 +61,7 @@ void create_box( char *text, int width_units, int x, int y, int value ) {
   layer_add_child( window_get_root_layer( window ), bitmap_layer_get_layer( icon_layer ) );
 
 	text_layer = text_layer_create( GRect( x,y,( width_units * SCREEN_WIDTH )/2,USABLE_HEIGHT/3 ) );
-	text_layer_set_text( text_layer, text );
-	
+	text_layer_set_text( text_layer, text );	
 	text_layer_set_text_alignment( text_layer, GTextAlignmentCenter );
 	text_layer_set_background_color( text_layer, GColorClear);
 	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
@@ -73,19 +74,35 @@ void create_box( char *text, int width_units, int x, int y, int value ) {
 	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
 }
 
+void create_text_box( char *text, int width_units, int x, int y, char *value ) {
+	text_layer = text_layer_create( GRect( x,y,( width_units * SCREEN_WIDTH )/2,USABLE_HEIGHT/3 ) );
+	text_layer_set_text( text_layer, text );
+	text_layer_set_text_alignment( text_layer, GTextAlignmentCenter );
+	text_layer_set_background_color( text_layer, GColorClear);
+	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
+	
+	text_layer = text_layer_create( GRect( x,y+( ( ( USABLE_HEIGHT/3 )-STATUS_BAR_HEIGHT )/2 ),( width_units * SCREEN_WIDTH )/2,USABLE_HEIGHT/3 ) );
+	text_layer_set_text( text_layer, value );
+	text_layer_set_text_alignment( text_layer, GTextAlignmentCenter );
+	text_layer_set_font( text_layer, fonts_get_system_font( FONT_KEY_GOTHIC_14 ) );
+	text_layer_set_background_color( text_layer, GColorClear);
+	layer_add_child( window_get_root_layer( window ), text_layer_get_layer( text_layer ) );
+}
+
+
 void forecast_load( Window *window ) {	
-	create_box( "Temp Spot",2,0,0, 0 );
-	create_box( "Swell",1,0,USABLE_HEIGHT/3, 1 );
-	create_box( "Tide",1,SCREEN_WIDTH/2,USABLE_HEIGHT/3, 2 );
-	create_box( "Wind",1,0,2*USABLE_HEIGHT/3, 3 );
-	create_box( "Size",1,SCREEN_WIDTH/2,2*USABLE_HEIGHT/3, 4 );
+	create_box( drawable_location->name,2,0,0, get_current_conditions( drawable_location, OVERALL ) );
+	create_box( "Swell",1,0,USABLE_HEIGHT/3, get_current_conditions( drawable_location, SWELL ) );
+	create_box( "Tide",1,SCREEN_WIDTH/2,USABLE_HEIGHT/3, get_current_conditions( drawable_location, TIDE ) );
+	create_box( "Wind",1,0,2*USABLE_HEIGHT/3, get_current_conditions( drawable_location, WIND ) );
+	create_text_box( "Size",1,SCREEN_WIDTH/2,2*USABLE_HEIGHT/3, get_current_swell_size( drawable_location ) );
 }
 
 void forecast_unload( Window *window ) {
 	layer_destroy( window_get_root_layer( window ) ); // Double check this is sufficient
 }
 
-void create_forecast_display( Location *location ) {
+void create_forecast_display() {
 	window = window_create();
 	
 	window_set_window_handlers( window, (WindowHandlers){
@@ -107,7 +124,8 @@ static void menu_draw_row_callback( GContext* ctx, const Layer *cell_layer, Menu
 }
 
 static void menu_select_callback( MenuLayer *menu_layer, MenuIndex *cell_index, void *data ) {
-	create_forecast_display( get_location_by_index( cell_index->row ) );
+	drawable_location = get_location_by_index( cell_index->row );
+	create_forecast_display();
 }
 
 static void menu_load ( Window *window ) {	
