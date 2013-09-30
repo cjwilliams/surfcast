@@ -120,7 +120,6 @@ static Forecast *get_current_forecast( Location *location ){
 
 int get_current_conditions( Location *location, int condition_type ){
 	Forecast *forecast = get_current_forecast( location );
-	APP_LOG( APP_LOG_LEVEL_DEBUG, "FORECAST DATE: %u, TIME: %u, CONDITION: %u", forecast->date, forecast->hour, forecast->conditions[ condition_type ] );
 	return( forecast->conditions[ condition_type ] );
 }
 
