@@ -27,13 +27,20 @@ enum {
 	TIDE_HEIGHT_KEY = 0x9
 };
 
+enum REQUEST_STATUSES {
+	STOP_FLAG = 0x0,
+	NEW_MESSAGE = 0x1,
+	RETRY_MESSAGE = 0x2,
+	FETCH_ADDITIONAL = 0x3
+}
+
 static void in_received_handler( DictionaryIterator *received, void *context ) {
 	APP_LOG( APP_LOG_LEVEL_DEBUG_VERBOSE, "Inbound Message Received Handler" );
 	
 	Tuple *tuple;
 	
 	tuple = dict_find( received, REQUEST_STATUS_KEY );
-	if( 0 == (int)tuple->value->uint32 ){ 
+	if( (int)tuple->value->uint32 == STOP_FLAG ){ 
 		done = 1; 
 		return;
 	}
@@ -66,7 +73,7 @@ static void in_received_handler( DictionaryIterator *received, void *context ) {
 	}
 	
 	tuple = dict_find( received, TIDE_HEIGHT_KEY );  
-	if(tuple) {
+	if( tuple ) {
 		create_tide_forecast(
 			dict_find( received, COUNTY_KEY )->value->cstring, 
 			dict_find( received, DATE_KEY )->value->uint32,
@@ -104,12 +111,12 @@ static void out_failed_handler( DictionaryIterator *failed, AppMessageResult rea
 static void out_next_handler( AppMessageResult result, void *context ) {
 	APP_LOG( APP_LOG_LEVEL_DEBUG, "Outbound Message Next Handler" );
 	
-	if( 1 == done ){ return; } 
+	if( done ){ return; } 
 	else if( result != APP_MSG_OK ){ 
-		get_next_forecast( 2 ); 
+		get_next_forecast( RETRY_MESSAGE ); 
 		debug_reason( result );
 	} 
-	else { get_next_forecast( 1 ); }
+	else { get_next_forecast( NEW_MESSAGE ); }
 }
 
 static AppMessageCallbacksNode app_msg_callbacks = {
@@ -130,7 +137,7 @@ void app_message_init( void ) {
 		return;
 	}
 		
-	get_next_forecast( 1 );
+	get_next_forecast( NEW_MESSAGE );
 	start_timer();
 }
 
