@@ -21,7 +21,7 @@ var myCounties = [ "orange-county","santa-cruz","san-diego","san-francisco","mon
 var myForecasts = [];
 var myTides = [];
 var queuedMessage = {};
-var duration = 5;
+var duration = 24;
 // ========== GLOBAL VARIABLES ==========
 
 // This function uses regex to return the number day of the forecast
