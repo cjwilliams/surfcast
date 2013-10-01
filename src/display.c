@@ -140,7 +140,7 @@ void create_forecast_display() {
 
 /********** LOCATIONS MENU **********/
 static uint16_t menu_get_num_rows_callback( MenuLayer *menu_layer, uint16_t section_index, void *data ) {
-  return NUM_SPOTS;
+  return get_num_locations();
 }
 
 static void menu_draw_row_callback( GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data ) {

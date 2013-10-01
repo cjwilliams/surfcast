@@ -23,7 +23,7 @@ bool set_current_datetime( void ){
 		
 		APP_LOG( APP_LOG_LEVEL_INFO, "Setting current date/time to %u(date) %u(time)", date, hour );
 		
-		update_current_indices();
+		// update_current_indices();
 
 		return true;
 	}

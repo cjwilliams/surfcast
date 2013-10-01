@@ -136,6 +136,8 @@ void app_message_init( void ) {
 	if( app_message_register_callbacks( &app_msg_callbacks ) != APP_MSG_OK ){
 		return;
 	}
+	
+	init_forecast_data();
 		
 	get_next_forecast( NEW_MESSAGE );
 	start_timer();
@@ -145,6 +147,7 @@ void app_message_deinit( void ) {
 	stop_timer();
   app_message_out_release();
 	app_message_deregister_callbacks( &app_msg_callbacks );
+	deinit_forecast_data();
 }
 
 void get_next_forecast( uint8_t status_flag ) {

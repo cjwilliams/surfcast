@@ -1,5 +1,3 @@
-// Make sure "forecast" and "location" are not globals
-
 #include <pebble_os.h>
 #include <pebble_app.h>
 #include <pebble_fonts.h>
@@ -11,84 +9,45 @@
 #include "utils.h"
 #include "constants.h"
 
-static Forecast forecasts[ NUM_TOTAL_FORECASTS ];
-static TideForecast tide_forecasts[ NUM_TOTAL_FORECASTS ];
 static Location locations[ NUM_SPOTS ];
-float tide_heights[ 10 ];
+static County counties[ NUM_COUNTIES ];
 
-static int next_forecast = 0;
-static int next_tide_forecast = 0;
 static int next_location = 0;
+static int next_county = 0;
 
-Location *create_location( char *spot_name, char *county ){
-	locations[ next_location ].current_index = -1;
-	locations[ next_location ].current_tide_index = -1;
+static County *get_county_by_name( char *county_name ){
+	for( int i=0; i<NUM_COUNTIES; i++ ){
+		if( ( strcmp( county_name, counties[ i ].county_name ) == 0 ) ){
+			return( &counties[ i ] );
+		}
+	}
+	return NULL;
+}
+
+static County *create_county( char *county_name ){
+	counties[ next_county ].current_tide_forecast = NULL;
+	strncpy( counties[ next_county ].county_name, county_name, sizeof( counties[ next_county ].county_name ) );
+	
+	APP_LOG( APP_LOG_LEVEL_DEBUG, "Creating county %s",counties[ next_county ].county_name );
+	return( &counties[ next_county++ ] );
+}
+
+Location *create_location( char *spot_name, char *county_name ){
+	County *county;
+	
+	locations[ next_location ].current_forecast = NULL;
 	strncpy( locations[ next_location ].name, spot_name, sizeof( locations[ next_location ].name ) );
-	strncpy( locations[ next_location ].county, county, sizeof( locations[ next_location ].county ) );
+	
+	if( ( county = get_county_by_name( county_name ) ) == NULL ){
+		county = create_county( county_name );
+	}
+	locations[ next_location ].county = county;
 	
 	APP_LOG( APP_LOG_LEVEL_DEBUG, "Creating location %s",locations[ next_location ].name );
 	return( &locations[ next_location++ ] );
 }
 
-Forecast *create_forecast( char *spot_name, char *county_name, int date, int hour, int general, int swell, int tide, int wind, char *swell_size ){
-	if( next_forecast < NUM_TOTAL_FORECASTS ){
-		Location *location;
-
-		forecasts[ next_forecast ].date = date;
-		forecasts[ next_forecast ].hour = hour;
-		forecasts[ next_forecast ].conditions[0] = general;
-		forecasts[ next_forecast ].conditions[1] = swell;
-		forecasts[ next_forecast ].conditions[2] = tide;
-		forecasts[ next_forecast ].conditions[3] = wind;
-		strncpy( forecasts[ next_forecast ].swell_size, swell_size, sizeof( forecasts[ next_forecast ].swell_size ) );
-	
-		if( ( location = get_location_by_spot( spot_name ) ) == NULL ){
-			location = create_location( spot_name, county_name );
-		}
-		forecasts[ next_forecast ].location = location;
-	}
-	else{
-		APP_LOG(APP_LOG_LEVEL_ERROR, "Almost had a Buffer Overflow");
-	}
-	
-	return( &forecasts[ next_forecast++ ] );
-}
-
-TideForecast *create_tide_forecast( char *county_name, int date, int hour, int tide_height ){
-	if( next_forecast < NUM_TOTAL_FORECASTS ){
-		tide_forecasts[ next_tide_forecast ].date = date;
-		tide_forecasts[ next_tide_forecast ].hour = hour;
-		tide_forecasts[ next_tide_forecast ].tide_height = tide_height;	
-		tide_forecasts[ next_tide_forecast ].location = get_location_by_county( county_name );	
-	}
-	else{
-		APP_LOG(APP_LOG_LEVEL_ERROR, "Almost had a Buffer Overflow");
-	}
-	
-	return( &tide_forecasts[ next_tide_forecast++ ] ); 
-}
-
-void update_current_indices( void ){
-	int date = get_current_date();
-	int hour = get_current_hour();
-	
-	for( int i=0; i<NUM_TOTAL_FORECASTS; i++ ){
-		if( ( forecasts[ i ].date == date ) && ( forecasts[ i ].hour == hour ) ){
-			( forecasts[ i ].location )->current_index = i;
-		}
-	}
-	for( int j=0; j<NUM_TOTAL_FORECASTS; j++ ){
-		if( ( tide_forecasts[ j ].date == date ) && ( tide_forecasts[ j ].hour == hour ) ){
-			( tide_forecasts[ j ].location )->current_tide_index = j;
-		}
-	}
-}
-
-Location *get_location_by_index( int indexed_location ){
-	return &locations[ indexed_location ];
-}
-
-Location *get_location_by_spot( char *name ){
+static Location *get_location_by_spot( char *name ){
 	for( int i=0; i<NUM_SPOTS; i++ ){
 		if( ( strcmp( name, locations[ i ].name ) == 0 ) ){
 			return( &locations[ i ] );
@@ -97,41 +56,144 @@ Location *get_location_by_spot( char *name ){
 	return NULL;
 }
 
-Location *get_location_by_county( char *county ){
-	for( int i=0; i<NUM_SPOTS; i++ ){
-		if( ( strcmp( county, locations[ i ].county ) == 0 ) ){
-			return( &locations[ i ] );
+ForecastNode *create_forecast( char *spot_name, char *county_name, int date, int hour, int general, int swell, int tide, int wind, char *swell_size ){
+	// Check that forecast isn't already expired
+	if( date > get_current_date() || ( date == get_current_date() && hour >= get_current_hour() ) ){
+		Location *location;
+
+		// Find location, or create a new location if not already existing
+		if( ( location = get_location_by_spot( spot_name ) ) == NULL ){
+			location = create_location( spot_name, county_name );
 		}
+
+		ForecastNode *current, *prev, *forecast;
+		
+		// Create the ForecastNode
+		forecast = malloc( sizeof( ForecastNode ) );
+		forecast->date = date;
+		forecast->hour = hour;
+		forecast->conditions[0] = general;
+		forecast->conditions[1] = swell;
+		forecast->conditions[2] = tide;
+		forecast->conditions[3] = wind;
+		strncpy( forecast->swell_size, swell_size, sizeof( forecast->swell_size ) );
+
+		// Insert the new ForecastNode
+		if( ( current = location->current_forecast ) == NULL || ( current->date > forecast->date ) || ( current->date == forecast->date && current->hour > forecast->hour ) ){
+			location->current_forecast = forecast;
+			forecast->next_forecast = current;
+		}
+		else{ 
+			prev = current; current = current->next_forecast;
+			while( prev->next_forecast != NULL && ( current->date < forecast->date || ( current->date == forecast->date && current->hour < forecast->hour ) ) ){
+				prev = current;
+				current = current->next_forecast;
+			}
+			
+			forecast->next_forecast = current;
+			prev->next_forecast = forecast;
+		}	
+		return forecast;
 	}
-	return NULL;
+	else {
+		APP_LOG( APP_LOG_LEVEL_DEBUG, "Skipping expired forecast from day %u hour %u", date, hour );
+		return NULL;
+	}
+}	// Should check for missing forecasts
+
+TideForecastNode *create_tide_forecast( char *county_name, int date, int hour, int tide_height ){
+	// Check that tide forecast isn't already expired
+	if( date > get_current_date() || ( date == get_current_date() && hour >= get_current_hour() ) ){
+		County *county;
+
+		if( ( county = get_county_by_name( county_name ) ) == NULL ){
+			APP_LOG( APP_LOG_LEVEL_ERROR, "Missing county for %s", county_name );
+		}
+
+		TideForecastNode *current, *prev, *tide_forecast;
+		
+		// Create the TideForecastNode
+		tide_forecast = malloc( sizeof( TideForecastNode ) );
+		tide_forecast->date = date;
+		tide_forecast->hour = hour;
+		tide_forecast->tide_height = tide_height;
+
+		// Insert the new TideForecastNode
+		if( ( current = county->current_tide_forecast ) == NULL || ( current->date > tide_forecast->date ) || ( current->date == tide_forecast->date && current->hour > tide_forecast->hour ) ){
+			county->current_tide_forecast = tide_forecast;
+			tide_forecast->next_tide_forecast = current;
+		}
+		else{ 
+			prev = current; current = current->next_tide_forecast;
+			while( prev->next_tide_forecast != NULL && ( current->date < tide_forecast->date || ( current->date == tide_forecast->date && current->hour < tide_forecast->hour ) ) ){
+				prev = current;
+				current = current->next_tide_forecast;
+			}
+		
+			tide_forecast->next_tide_forecast = current;
+			prev->next_tide_forecast = tide_forecast;
+		}	
+		return tide_forecast;
+	}
+	else {
+		APP_LOG( APP_LOG_LEVEL_DEBUG, "Skipping expired tide forecast from day %u hour %u", date, hour );
+		return NULL;
+	}
+}
+
+int get_num_locations(){
+	return next_location;
+}
+
+Location *get_location_by_index( int indexed_location ){
+	return &locations[ indexed_location ];
 }
 
 char *get_county( Location *location ){
-	return location->county;
+	return location->county->county_name;
 }
 
 char *get_spot_name( Location *location ){
 	return location->name;
 }
 
-static Forecast *get_current_forecast( Location *location ){
-	return &forecasts[ location->current_index ];
+static ForecastNode *get_current_forecast( Location *location ){
+	return location->current_forecast;
 }
 
 int get_current_conditions( Location *location, int condition_type ){
-	Forecast *forecast = get_current_forecast( location );
+	ForecastNode *forecast = get_current_forecast( location );
 	return( forecast->conditions[ condition_type ] );
 }
 
 char *get_current_swell_size( Location *location ){
-	Forecast *forecast = get_current_forecast( location );
+	ForecastNode *forecast = get_current_forecast( location );
 	return( forecast->swell_size );
 }
 
-// This could probably be memory-optimized by using ints, since all we're doing is drawing the relationships between points
-// int get_tide_heights( Location *location ){
-// 	Forecast *forecast = get_current_forecast( location );
-// 	
-// 	/* More stuff here */
-// 	return &tide_heights[ 0 ];
-// }
+void init_forecast_data(){
+// Check for persistent storage data, or empty app_msg queues
+}
+
+void deinit_forecast_data(){
+	for( int i=0; i<NUM_SPOTS; i++ ){
+		ForecastNode *prev, *current;
+		current = locations[ i ].current_forecast;
+		
+		while( current != NULL ){
+			prev = current;
+			current = current->next_forecast;
+			free( prev );
+		}	
+	}
+	for( int i=0; i<NUM_COUNTIES; i++ ){
+		TideForecastNode *prev, *current;
+		current = counties[ i ].current_tide_forecast;
+		
+		while( current != NULL ){
+			prev = current;
+			current = current->next_tide_forecast;
+			free( prev );
+		}	
+	}
+}
