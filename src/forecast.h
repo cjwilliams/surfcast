@@ -37,8 +37,8 @@ enum condition_types {
 ForecastNode *create_forecast( char *spot_name, char *county_name, int date, int hour, int general, int swell, int tide, int wind, char *swell_size );
 TideForecastNode *create_tide_forecast( char *county_name, int date, int hour, int tide_height );
 
-ForecastNode expire_forecast( ForecastNode *forecast );
-TideForecastNode expire_tide_forecast( TideForecastNode *tide_forecast );
+void expire_forecasts_before( int date, int hour );
+void expire_tide_forecasts_before( int date, int hour );
 
 int get_num_locations();
 

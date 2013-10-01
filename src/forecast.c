@@ -141,6 +141,34 @@ TideForecastNode *create_tide_forecast( char *county_name, int date, int hour, i
 	}
 }
 
+void expire_forecasts_before( int date, int hour ){
+	for( int i=0; i<next_location; i++ ){
+		ForecastNode *prev, *current;
+		current = locations[ i ].current_forecast;
+		
+		while( current != NULL && ( current->date < date || ( current->date == date && current->hour < hour ) ) ){
+			prev = current;
+			current = current->next_forecast;
+			free( prev );
+		}
+		locations[ i ].current_forecast = current;
+	}
+}
+
+void expire_tide_forecasts_before( int date, int hour ){
+	for( int i=0; i<next_county; i++ ){
+		TideForecastNode *prev, *current;
+		current = counties[ i ].current_tide_forecast;
+		
+		while( current != NULL && ( current->date < date || ( current->date == date && current->hour < hour ) ) ){
+			prev = current;
+			current = current->next_tide_forecast;
+			free( prev );
+		}
+		counties[ i ].current_tide_forecast = current;
+	}
+}
+
 int get_num_locations(){
 	return next_location;
 }
