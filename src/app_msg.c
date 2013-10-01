@@ -32,7 +32,7 @@ enum REQUEST_STATUSES {
 	NEW_MESSAGE = 0x1,
 	RETRY_MESSAGE = 0x2,
 	FETCH_ADDITIONAL = 0x3
-}
+};
 
 static void in_received_handler( DictionaryIterator *received, void *context ) {
 	APP_LOG( APP_LOG_LEVEL_DEBUG_VERBOSE, "Inbound Message Received Handler" );
