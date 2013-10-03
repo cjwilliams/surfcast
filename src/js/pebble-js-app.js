@@ -98,7 +98,10 @@ function fetchCountyTides( county, duration ) {
 
 // Can optimize this further by allowing param of retrievalDate, to minimize messages to send to watch
 // This function facilitates the collection of forecasts and tide heights
-function fetchSurfcast( duration ) {	
+function fetchSurfcast( duration ) {
+	myForecasts = [];
+	myTides = [];
+		
 	for( var i=0; i<mySpots.length; i++ ){
 		fetchSpotConditions( mySpots[ i ],duration );
 	}
@@ -106,6 +109,7 @@ function fetchSurfcast( duration ) {
 	for( var j=0; j<myCounties.length; j++ ){
 		fetchCountyTides( myCounties[ j ],duration );
 	}
+	Pebble.sendAppMessage({ "request_status": 4 })
 }
 
 // This function transmits the next forecast/tide data to the Pebble watch
@@ -160,11 +164,3 @@ PebbleEventListener.addEventListener( "appmessage",
 													else { transmitNextForecast(); }
                         });
 // Removed "if( myTides.length > 0 || myForecasts.length >0 )" from last else because the extra +1 iteration seems to be necessary to signal the watch app
-
-// This listener is not currently used -- leaving for possible future improvements
-// PebbleEventListener.addEventListener( "webviewclosed",
-//                                      function(e) {
-//                                      console.log( "webview closed" );
-//                                      console.log( e.type );
-//                                      console.log( e.response );
-//                                      });

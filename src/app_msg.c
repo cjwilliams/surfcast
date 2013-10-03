@@ -7,7 +7,7 @@
 #include "forecast.h"
 #include "utils.h"
 
-static int done = 0;
+static bool done = false;
 
 enum {
 	REQUEST_STATUS_KEY = 0xF,
@@ -34,7 +34,10 @@ static void in_received_handler( DictionaryIterator *received, void *context ) {
 	
 	tuple = dict_find( received, REQUEST_STATUS_KEY );
 	if( (int)tuple->value->uint32 == STOP_FLAG ){ 
-		done = 1; 
+		done = true;
+		return;
+	}
+	else if( (int)tuple->value->uint32 == READY_FLAG ){
 		return;
 	}
 	
@@ -104,7 +107,7 @@ static void out_failed_handler( DictionaryIterator *failed, AppMessageResult rea
 static void out_next_handler( AppMessageResult result, void *context ) {
 	APP_LOG( APP_LOG_LEVEL_DEBUG, "Outbound Message Next Handler" );
 	
-	if( done ){ return; } 
+	if( done ){ return; }
 	else if( result != APP_MSG_OK ){ 
 		get_next_forecast( RETRY_MESSAGE ); 
 		debug_reason( result );
@@ -132,7 +135,7 @@ void app_message_init( void ) {
 	
 	init_forecast_data();
 		
-	get_next_forecast( NEW_MESSAGE );
+	get_next_forecast( FETCH_ADDITIONAL );
 	start_timer();
 }
 
