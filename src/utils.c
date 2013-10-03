@@ -13,30 +13,23 @@ static int date;
 static int hour;
 
 // ========== Timekeeping ==========
-bool set_current_datetime( void ){
-	time_t now = time( NULL );
-  struct tm *current_time = localtime( &now );
-	
-	if( date != current_time->tm_mday || hour != current_time->tm_hour ){
-		date = current_time->tm_mday;
-		hour = current_time->tm_hour;
+void set_current_datetime( struct tm *tick_time, TimeUnits units_changed ){
+	if( date != tick_time->tm_mday || hour != tick_time->tm_hour ){
+		date = tick_time->tm_mday;
+		hour = tick_time->tm_hour;
 		
 		APP_LOG( APP_LOG_LEVEL_INFO, "Setting current date/time to %u(date) %u(time)", date, hour );
 		
 		expire_forecasts_before( date, hour );
 		expire_tide_forecasts_before( date, hour );
-
-		return true;
 	}
-	
-	return false;
 }
 
 void set_stopped_flag( void) {
 	stopped = 1;
 }
 
-void reset_stopped_flag( void ) {
+static void reset_stopped_flag( void ) {
 	stopped = 0;
 }
 
@@ -46,8 +39,6 @@ static void watchdog_timer_check( void *context ) {
 		reset_stopped_flag();
 		get_next_forecast( NEW_MESSAGE );
 	}
-	
-	set_current_datetime();
 	start_timer();
 }
 
