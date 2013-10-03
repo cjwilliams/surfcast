@@ -167,7 +167,6 @@ static void menu_draw_row_callback( GContext* ctx, const Layer *cell_layer, Menu
 }
 
 static void menu_select_callback( MenuLayer *menu_layer, MenuIndex *cell_index, void *data ) {
-	set_current_datetime();
 	drawable_location = get_location_by_index( cell_index->row );
 	if( drawable_location != NULL ){
 		create_forecast_display();
@@ -178,8 +177,6 @@ static void menu_select_callback( MenuLayer *menu_layer, MenuIndex *cell_index, 
 }
 
 static void menu_load ( Window *window ) {	
-	set_current_datetime();
-	
 	for (int i = 0; i < NUM_CONDITIONS; i++) {
 		condition_icons[ i ] = gbitmap_create_with_resource( CONDITION_ICONS[ i ] );
 	}
