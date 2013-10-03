@@ -17,12 +17,12 @@ typedef struct TideForecastNode {
 } TideForecastNode;
 
 typedef struct {
-	TideForecastNode *current_tide_forecast;
+	TideForecastNode *first_tide_forecast;
 	char county_name[ 20 ];
 } County;
 
 typedef struct {
-	ForecastNode *current_forecast;
+	ForecastNode *first_forecast;
 	char name[ 20 ];
 	County *county;
 } Location;
@@ -47,6 +47,7 @@ Location *get_location_by_index( int indexed_location );
 char *get_county( Location *location );
 char *get_spot_name( Location *location );
 
+bool has_current_forecast( Location *location );
 int get_current_conditions( Location *location, int condition_type );
 char *get_current_swell_size( Location *location );
 // int get_current_swell_size( Location *location );

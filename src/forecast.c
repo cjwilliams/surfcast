@@ -25,7 +25,7 @@ static County *get_county_by_name( char *county_name ){
 }
 
 static County *create_county( char *county_name ){
-	counties[ next_county ].current_tide_forecast = NULL;
+	counties[ next_county ].first_tide_forecast = NULL;
 	strncpy( counties[ next_county ].county_name, county_name, sizeof( counties[ next_county ].county_name ) );
 	
 	APP_LOG( APP_LOG_LEVEL_DEBUG, "Creating county %s",counties[ next_county ].county_name );
@@ -35,7 +35,7 @@ static County *create_county( char *county_name ){
 Location *create_location( char *spot_name, char *county_name ){
 	County *county;
 	
-	locations[ next_location ].current_forecast = NULL;
+	locations[ next_location ].first_forecast = NULL;
 	strncpy( locations[ next_location ].name, spot_name, sizeof( locations[ next_location ].name ) );
 	
 	if( ( county = get_county_by_name( county_name ) ) == NULL ){
@@ -79,8 +79,8 @@ ForecastNode *create_forecast( char *spot_name, char *county_name, int date, int
 		strncpy( forecast->swell_size, swell_size, sizeof( forecast->swell_size ) );
 
 		// Insert the new ForecastNode
-		if( ( current = location->current_forecast ) == NULL || ( current->date > forecast->date ) || ( current->date == forecast->date && current->hour > forecast->hour ) ){
-			location->current_forecast = forecast;
+		if( ( current = location->first_forecast ) == NULL || ( current->date > forecast->date ) || ( current->date == forecast->date && current->hour > forecast->hour ) ){
+			location->first_forecast = forecast;
 			forecast->next_forecast = current;
 		}
 		else{ 
@@ -119,8 +119,8 @@ TideForecastNode *create_tide_forecast( char *county_name, int date, int hour, i
 		tide_forecast->tide_height = tide_height;
 
 		// Insert the new TideForecastNode
-		if( ( current = county->current_tide_forecast ) == NULL || ( current->date > tide_forecast->date ) || ( current->date == tide_forecast->date && current->hour > tide_forecast->hour ) ){
-			county->current_tide_forecast = tide_forecast;
+		if( ( current = county->first_tide_forecast ) == NULL || ( current->date > tide_forecast->date ) || ( current->date == tide_forecast->date && current->hour > tide_forecast->hour ) ){
+			county->first_tide_forecast = tide_forecast;
 			tide_forecast->next_tide_forecast = current;
 		}
 		else{ 
@@ -144,28 +144,28 @@ TideForecastNode *create_tide_forecast( char *county_name, int date, int hour, i
 void expire_forecasts_before( int date, int hour ){
 	for( int i=0; i<next_location; i++ ){
 		ForecastNode *prev, *current;
-		current = locations[ i ].current_forecast;
+		current = locations[ i ].first_forecast;
 		
 		while( current != NULL && ( current->date < date || ( current->date == date && current->hour < hour ) ) ){
 			prev = current;
 			current = current->next_forecast;
 			free( prev );
 		}
-		locations[ i ].current_forecast = current;
+		locations[ i ].first_forecast = current;
 	}
 }
 
 void expire_tide_forecasts_before( int date, int hour ){
 	for( int i=0; i<next_county; i++ ){
 		TideForecastNode *prev, *current;
-		current = counties[ i ].current_tide_forecast;
+		current = counties[ i ].first_tide_forecast;
 		
 		while( current != NULL && ( current->date < date || ( current->date == date && current->hour < hour ) ) ){
 			prev = current;
 			current = current->next_tide_forecast;
 			free( prev );
 		}
-		counties[ i ].current_tide_forecast = current;
+		counties[ i ].first_tide_forecast = current;
 	}
 }
 
@@ -189,7 +189,21 @@ char *get_spot_name( Location *location ){
 }
 
 static ForecastNode *get_current_forecast( Location *location ){
-	return location->current_forecast;
+	if( ( location->first_forecast->date == get_current_date() ) && ( location->first_forecast->hour == get_current_hour() ) ){
+		return location->first_forecast;
+	}
+	else{
+		return NULL;
+	}
+}
+
+bool has_current_forecast( Location *location ){
+	if ( get_current_forecast( location ) ){
+		return true;
+	}
+	else{
+		return false;
+	}
 }
 
 int get_current_conditions( Location *location, int condition_type ){
@@ -209,7 +223,7 @@ void init_forecast_data(){
 void deinit_forecast_data(){
 	for( int i=0; i<NUM_SPOTS; i++ ){
 		ForecastNode *prev, *current;
-		current = locations[ i ].current_forecast;
+		current = locations[ i ].first_forecast;
 		
 		while( current != NULL ){
 			prev = current;
@@ -219,7 +233,7 @@ void deinit_forecast_data(){
 	}
 	for( int i=0; i<NUM_COUNTIES; i++ ){
 		TideForecastNode *prev, *current;
-		current = counties[ i ].current_tide_forecast;
+		current = counties[ i ].first_tide_forecast;
 		
 		while( current != NULL ){
 			prev = current;

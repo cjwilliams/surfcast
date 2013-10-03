@@ -102,13 +102,28 @@ void create_text_box( char *text, int width_units, int x, int y, char *value ) {
 	if( current_value_layer < MAX_LAYERS ){ forecast_value_layers[ current_value_layer++ ] = text_layer; }
 }
 
+void create_error_box( void ){
+	TextLayer *text_layer;
+	
+	text_layer = text_layer_create( GRect( 0,USABLE_HEIGHT/3,SCREEN_WIDTH,USABLE_HEIGHT/3 ) );
+	text_layer_set_text( text_layer, "There are no current forecasts for this location" );
+	text_layer_set_text_alignment( text_layer, GTextAlignmentCenter );
+	text_layer_set_background_color( text_layer, GColorClear);
+	layer_add_child( window_get_root_layer( forecast_window ), text_layer_get_layer( text_layer ) );
+	if( current_title_layer < MAX_LAYERS ){ forecast_title_layers[ current_title_layer++ ] = text_layer; }
+}
 
-void forecast_load( Window *window ) {	
-	create_box( drawable_location->name, 2, 0, 0, get_current_conditions( drawable_location, OVERALL ) );
-	create_box( "Swell", 1, 0, USABLE_HEIGHT/3, get_current_conditions( drawable_location, SWELL ) );
-	create_box( "Tide", 1, SCREEN_WIDTH/2, USABLE_HEIGHT/3, get_current_conditions( drawable_location, TIDE ) );
-	create_box( "Wind", 1, 0, 2*USABLE_HEIGHT/3, get_current_conditions( drawable_location, WIND ) );
-	create_text_box( "Size", 1, SCREEN_WIDTH/2, 2*USABLE_HEIGHT/3, get_current_swell_size( drawable_location ) );
+void forecast_load( Window *window ) {
+	if( has_current_forecast( drawable_location ) ){
+		create_box( drawable_location->name, 2, 0, 0, get_current_conditions( drawable_location, OVERALL ) );
+		create_box( "Swell", 1, 0, USABLE_HEIGHT/3, get_current_conditions( drawable_location, SWELL ) );
+		create_box( "Tide", 1, SCREEN_WIDTH/2, USABLE_HEIGHT/3, get_current_conditions( drawable_location, TIDE ) );
+		create_box( "Wind", 1, 0, 2*USABLE_HEIGHT/3, get_current_conditions( drawable_location, WIND ) );
+		create_text_box( "Size", 1, SCREEN_WIDTH/2, 2*USABLE_HEIGHT/3, get_current_swell_size( drawable_location ) );
+	}
+	else{
+		create_error_box();
+	}
 }
 
 void forecast_unload( Window *window ) {
@@ -145,7 +160,10 @@ static uint16_t menu_get_num_rows_callback( MenuLayer *menu_layer, uint16_t sect
 
 static void menu_draw_row_callback( GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data ) {
 	Location *location = get_location_by_index( cell_index->row );
-	menu_cell_basic_draw( ctx, cell_layer, get_spot_name( location ), get_county( location ), condition_icons[ get_current_conditions( location, OVERALL ) ] );
+	
+	if( location != NULL ){
+		menu_cell_basic_draw( ctx, cell_layer, get_spot_name( location ), get_county( location ), condition_icons[ get_current_conditions( location, OVERALL ) ] );
+	}
 }
 
 static void menu_select_callback( MenuLayer *menu_layer, MenuIndex *cell_index, void *data ) {
@@ -155,7 +173,7 @@ static void menu_select_callback( MenuLayer *menu_layer, MenuIndex *cell_index, 
 		create_forecast_display();
 	}
 	else{
-		APP_LOG( APP_LOG_LEVEL_WARNING, "Attempted to access a forecast for a NULL location" );
+		APP_LOG( APP_LOG_LEVEL_WARNING, "Attempted to access a NULL location" );
 	}
 }
 
