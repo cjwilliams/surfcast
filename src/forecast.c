@@ -174,7 +174,10 @@ int get_num_locations(){
 }
 
 Location *get_location_by_index( int indexed_location ){
-	return &locations[ indexed_location ];
+	if( indexed_location < next_location ){
+		return &locations[ indexed_location ];
+	}
+	return NULL;
 }
 
 char *get_county( Location *location ){

@@ -151,7 +151,12 @@ static void menu_draw_row_callback( GContext* ctx, const Layer *cell_layer, Menu
 static void menu_select_callback( MenuLayer *menu_layer, MenuIndex *cell_index, void *data ) {
 	set_current_datetime();
 	drawable_location = get_location_by_index( cell_index->row );
-	create_forecast_display();
+	if( drawable_location != NULL ){
+		create_forecast_display();
+	}
+	else{
+		APP_LOG( APP_LOG_LEVEL_WARNING, "Attempted to access a forecast for a NULL location" );
+	}
 }
 
 static void menu_load ( Window *window ) {	
