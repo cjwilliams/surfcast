@@ -9,8 +9,10 @@
 
 #include "app_msg.h"
 #include "display.h"
+#include "utils.h"
 
 static void init( void ) {
+	tick_timer_service_subscribe( HOUR_UNIT, set_current_datetime );
 	init_windows();
 	app_message_init();
 }
@@ -18,6 +20,7 @@ static void init( void ) {
 static void deinit( void ) {
 	app_message_deinit();
 	deinit_windows();
+	tick_timer_service_unsubscribe();
 }
 
 int main( void ) {
