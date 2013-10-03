@@ -44,7 +44,7 @@ static void watchdog_timer_check( void *context ) {
 	if( 1 == stopped ) {
 		APP_LOG( APP_LOG_LEVEL_INFO, "Transmissions are Stopped - Restarting..." );
 		reset_stopped_flag();
-		get_next_forecast( 1 );
+		get_next_forecast( NEW_MESSAGE );
 	}
 	
 	set_current_datetime();
