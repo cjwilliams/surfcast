@@ -8,6 +8,7 @@
 #include "forecast.h"
 #include "utils.h"
 #include "constants.h"
+#include "display.h"
 
 static Location locations[ NUM_SPOTS ];
 static County counties[ NUM_COUNTIES ];
@@ -33,18 +34,23 @@ static County *create_county( char *county_name ){
 }
 
 Location *create_location( char *spot_name, char *county_name ){
+	Location *location = &locations[ next_location ];
 	County *county;
 	
-	locations[ next_location ].first_forecast = NULL;
-	strncpy( locations[ next_location ].name, spot_name, sizeof( locations[ next_location ].name ) );
+	location->first_forecast = NULL;
+	strncpy( location->name, spot_name, sizeof( location->name ) );
 	
 	if( ( county = get_county_by_name( county_name ) ) == NULL ){
 		county = create_county( county_name );
 	}
-	locations[ next_location ].county = county;
+	location->county = county;
+	
+	// Set location = locations[ next_location ] & increment next_location independently to facilitate menu scroll update
+	next_location++;
+	update_menu();
 	
 	APP_LOG( APP_LOG_LEVEL_DEBUG, "Creating location %s",locations[ next_location ].name );
-	return( &locations[ next_location++ ] );
+	return( location );
 }
 
 static Location *get_location_by_spot( char *name ){

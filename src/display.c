@@ -154,6 +154,13 @@ void create_forecast_display() {
 }
 
 /********** LOCATIONS MENU **********/
+void update_menu( void ){
+	if( menu_layer != NULL ){
+		menu_layer_reload_data( menu_layer );
+		layer_mark_dirty( menu_layer_get_layer( menu_layer ) );
+	}
+}
+
 static uint16_t menu_get_num_rows_callback( MenuLayer *menu_layer, uint16_t section_index, void *data ) {
   return get_num_locations();
 }
