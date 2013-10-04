@@ -150,7 +150,7 @@ static void forecast_unload( Window *window ) {
 }
 
 static void create_forecast_display() {
-	forecast_window = window_create();
+	if( !forecast_window ){ forecast_window = window_create(); }
 	
 	window_set_window_handlers( forecast_window, (WindowHandlers){
     .load = forecast_load,
@@ -218,7 +218,7 @@ static void menu_unload( Window *window ) {
 }
 
 static void create_menu_display( void ) {
-	menu_window = window_create();
+	if( !menu_window ){ menu_window = window_create(); }
 	
 	window_set_window_handlers( menu_window, (WindowHandlers){
     .load = menu_load,
@@ -273,7 +273,7 @@ static void splash_unload( Window *window ) {
 }
 
 static void create_splash_display( void ) {	
-	splash_window = window_create();
+	if( !splash_window ){ splash_window = window_create(); }
   
 	window_set_window_handlers( splash_window, (WindowHandlers){
     .load = splash_load,
