@@ -9,6 +9,7 @@
 
 static bool done = false;
 
+// Key values for AppMessage Dictionary
 enum {
 	REQUEST_STATUS_KEY = 0xF,
 	
@@ -27,6 +28,7 @@ enum {
 	TIDE_HEIGHT_KEY = 0x9
 };
 
+// Called when a message is received from PebbleKitJS
 static void in_received_handler( DictionaryIterator *received, void *context ) {
 	APP_LOG( APP_LOG_LEVEL_DEBUG_VERBOSE, "Inbound Message Received Handler" );
 	
@@ -36,12 +38,12 @@ static void in_received_handler( DictionaryIterator *received, void *context ) {
 	if( (int)tuple->value->uint32 == STOP_FLAG ){ 
 		done = true;
 		return;
-	}
+	}	// Stops Pebble from sending more AppMessage requests to PebbleKitJS
 	else if( (int)tuple->value->uint32 == READY_FLAG ){
 		return;
-	}
+	} // Used to acknowledge forecasts available after watch app restart (without accompanying JS service restart)
 	
-	tuple = dict_find( received, SPOT_KEY );  
+	tuple = dict_find( received, SPOT_KEY );	// Checks for SPOT_KEY, which only exists in AppMessages with a standard forecast
 	if( tuple ) {
 		create_forecast( 
 			tuple->value->cstring,
@@ -56,7 +58,6 @@ static void in_received_handler( DictionaryIterator *received, void *context ) {
 		);
 		APP_LOG( APP_LOG_LEVEL_DEBUG, "SPOT: %s, DATE: %lu, HOUR: %lu, GENERAL: %lu, SWELL: %lu, TIDE: %lu, WIND: %lu, SWELL_SIZE: %s", 
 			tuple->value->cstring,
-			// dict_find( received, COUNTY_KEY )->value->cstring, 
 			dict_find( received, DATE_KEY )->value->uint32,
 			dict_find( received, HOUR_KEY )->value->uint32,
 			dict_find( received, GENERAL_KEY )->value->uint32,
@@ -68,7 +69,7 @@ static void in_received_handler( DictionaryIterator *received, void *context ) {
 		return;
 	}
 	
-	tuple = dict_find( received, TIDE_HEIGHT_KEY );  
+	tuple = dict_find( received, TIDE_HEIGHT_KEY );	// Checks for TIDE_HEIGHT_KEY, which only exists in AppMessages with a tide forecast
 	if( tuple ) {
 		create_tide_forecast(
 			dict_find( received, COUNTY_KEY )->value->cstring, 
@@ -84,26 +85,31 @@ static void in_received_handler( DictionaryIterator *received, void *context ) {
 		);
 		return;
 	}
-	APP_LOG( APP_LOG_LEVEL_WARNING, "Expecting Forecast or TideForecast, Got Something Else" );
+	// Default error when AppMessage is not a standard forecast or a tide forecast
+	APP_LOG( APP_LOG_LEVEL_WARNING, "Expecting Forecast or TideForecast, Got Something Else" );	
 }
 
+// Called when an incoming message from PebbleKitJS is dropped
 static void in_dropped_handler( void *context, AppMessageResult reason ) {	
 	APP_LOG( APP_LOG_LEVEL_WARNING, "Inbound Message Dropped Handler" );
 	debug_reason( reason );
 	// Does this do anything? Seems to auto retry after being called...?
 }
 
+// Called when PebbleKitJS acknowledges receipt of a message
 static void out_sent_handler( DictionaryIterator *sent, void *context ) {
 	APP_LOG( APP_LOG_LEVEL_DEBUG_VERBOSE, "Outbound Message Sent Handler" );
 	// Does this do anything?
 }
 
+// Called when PebbleKitJS does not acknowledge receipt of a message
 static void out_failed_handler( DictionaryIterator *failed, AppMessageResult reason, void *context ) {
 	APP_LOG( APP_LOG_LEVEL_WARNING, "Outbound Message Failed Handler" );
 	debug_reason( reason );
 	// Does this do anything? Seems to auto retry after being called...?
 }
 
+// Called each time one of the other handlers is called, but right after??
 static void out_next_handler( AppMessageResult result, void *context ) {
 	APP_LOG( APP_LOG_LEVEL_DEBUG, "Outbound Message Next Handler" );
 	
@@ -133,14 +139,14 @@ void app_message_init( void ) {
 		return;
 	}
 	
-	init_forecast_data();
+	init_forecast_data();	// Retrieve any stored forecast data
 		
-	get_next_forecast( FETCH_ADDITIONAL );
-	start_timer();
+	get_next_forecast( FETCH_ADDITIONAL );	// Request for new forecast data
+	start_timer();	// Start watchdog timer (utils.h)
 }
 
 void app_message_deinit( void ) {
-	stop_timer();
+	stop_timer();	// Stop watchdog timer (utils.h)
   app_message_out_release();
 	app_message_deregister_callbacks( &app_msg_callbacks );
 	deinit_forecast_data();
@@ -152,14 +158,14 @@ void get_next_forecast( uint8_t status_flag ) {
 	DictionaryIterator *iter;
 	
 	if ( ( reason = app_message_out_get( &iter ) ) != APP_MSG_OK ) {
-		debug_reason( reason );
-		set_stopped_flag();
+		debug_reason( reason );	// utils.h
+		set_stopped_flag();	// utils.h
 		return;
 	}
 
 	if ( ( result = dict_write_uint8( iter, REQUEST_STATUS_KEY, status_flag ) ) != DICT_OK ) {
-		debug_dictionary_result( result );
-		set_stopped_flag();
+		debug_dictionary_result( result );	// utils.h
+		set_stopped_flag();	// utils.h
 		return;
 	}
 

@@ -1,3 +1,5 @@
+// MEAT! This file handles all of the forecast data storage, insertion, and removal
+
 #include <pebble_os.h>
 #include <pebble_app.h>
 #include <pebble_fonts.h>
@@ -10,11 +12,16 @@
 #include "constants.h"
 #include "display.h"
 
-static Location locations[ NUM_SPOTS ];
-static County counties[ NUM_COUNTIES ];
+static Location locations[ NUM_SPOTS ];	// Array containing all locations
+static County counties[ NUM_COUNTIES ];	// Array containing all counties
 
-static int next_location = 0;
-static int next_county = 0;
+static int next_location = 0;	// Index for locations[]
+static int next_county = 0;		// Index for counties[]
+
+//========== Counties ==========
+char *get_county_name( Location *location ){
+	return location->county->county_name;
+}
 
 static County *get_county_by_name( char *county_name ){
 	for( int i=0; i<NUM_COUNTIES; i++ ){
@@ -33,7 +40,32 @@ static County *create_county( char *county_name ){
 	return( &counties[ next_county++ ] );
 }
 
-Location *create_location( char *spot_name, char *county_name ){
+//========== Locations ==========
+int get_num_locations(){
+	return next_location;
+}
+
+Location *get_location_by_index( int indexed_location ){
+	if( indexed_location < next_location ){
+		return &locations[ indexed_location ];
+	}
+	return NULL;
+}
+
+static Location *get_location_by_spot( char *name ){
+	for( int i=0; i<NUM_SPOTS; i++ ){
+		if( ( strcmp( name, locations[ i ].name ) == 0 ) ){
+			return( &locations[ i ] );
+		}
+	}
+	return NULL;
+}
+
+char *get_spot_name( Location *location ){
+	return location->name;
+}
+
+static Location *create_location( char *spot_name, char *county_name ){
 	Location *location = &locations[ next_location ];
 	County *county;
 	
@@ -53,15 +85,7 @@ Location *create_location( char *spot_name, char *county_name ){
 	return( location );
 }
 
-static Location *get_location_by_spot( char *name ){
-	for( int i=0; i<NUM_SPOTS; i++ ){
-		if( ( strcmp( name, locations[ i ].name ) == 0 ) ){
-			return( &locations[ i ] );
-		}
-	}
-	return NULL;
-}
-
+//========== Forecast & TideForecast Creation & Expiration ==========
 ForecastNode *create_forecast( char *spot_name, char *county_name, int date, int hour, int general, int swell, int tide, int wind, char *swell_size ){
 	// Check that forecast isn't already expired
 	if( date > get_current_date() || ( date == get_current_date() && hour >= get_current_hour() ) ){
@@ -105,7 +129,7 @@ ForecastNode *create_forecast( char *spot_name, char *county_name, int date, int
 		APP_LOG( APP_LOG_LEVEL_DEBUG, "Skipping expired forecast from day %u hour %u", date, hour );
 		return NULL;
 	}
-}	// Should check for missing forecasts
+}
 
 TideForecastNode *create_tide_forecast( char *county_name, int date, int hour, int tide_height ){
 	// Check that tide forecast isn't already expired
@@ -175,25 +199,7 @@ void expire_tide_forecasts_before( int date, int hour ){
 	}
 }
 
-int get_num_locations(){
-	return next_location;
-}
-
-Location *get_location_by_index( int indexed_location ){
-	if( indexed_location < next_location ){
-		return &locations[ indexed_location ];
-	}
-	return NULL;
-}
-
-char *get_county( Location *location ){
-	return location->county->county_name;
-}
-
-char *get_spot_name( Location *location ){
-	return location->name;
-}
-
+//========== Forecast & TideForecast Accessors ==========
 static ForecastNode *get_current_forecast( Location *location ){
 	if( ( location->first_forecast->date == get_current_date() ) && ( location->first_forecast->hour == get_current_hour() ) ){
 		return location->first_forecast;
@@ -222,8 +228,9 @@ char *get_current_swell_size( Location *location ){
 	return( forecast->swell_size );
 }
 
+//========== Data Management ==========
 void init_forecast_data(){
-// Check for persistent storage data, or empty app_msg queues
+// Check for persistent storage data
 }
 
 void deinit_forecast_data(){

@@ -12,7 +12,7 @@ static int stopped = 0;
 static int date;
 static int hour;
 
-// ========== Timekeeping ==========
+//========== Timekeeping (Forecast/TideForecast Validity) ==========
 void set_current_datetime( struct tm *tick_time, TimeUnits units_changed ){
 	if( date != tick_time->tm_mday || hour != tick_time->tm_hour ){
 		date = tick_time->tm_mday;
@@ -25,6 +25,15 @@ void set_current_datetime( struct tm *tick_time, TimeUnits units_changed ){
 	}
 }
 
+int get_current_date( void ){
+	return date;
+}
+
+int get_current_hour( void ){
+	return hour;
+}
+
+//========== Watchdog Timer ==========
 void set_stopped_flag( void) {
 	stopped = 1;
 }
@@ -52,15 +61,7 @@ void stop_timer( void ) {
 	app_timer_cancel( timer );
 }
 
-int get_current_date( void ){
-	return date;
-}
-
-int get_current_hour( void ){
-	return hour;
-}
-
-// ========== Debugging ==========
+//========== Debugging ==========
 void debug_reason( AppMessageResult reason ) {
 	switch( reason ) {
 		case APP_MSG_OK: APP_LOG( APP_LOG_LEVEL_DEBUG_VERBOSE, "AppMessage: OK" ); break;

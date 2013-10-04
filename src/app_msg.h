@@ -10,6 +10,7 @@ void app_message_deinit( void );
 // get_next_forecast( FETCH_ADDITIONAL ) - fetch NUM_FORECASTS, starting with the current day
 void get_next_forecast( uint8_t status_flag );
 
+// Keys to trigger behavior by PebbleKitJS (see above)
 enum REQUEST_STATUSES {
 	STOP_FLAG = 0x0,
 	NEW_MESSAGE = 0x1,
