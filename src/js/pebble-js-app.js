@@ -22,7 +22,16 @@ var myForecasts = [];
 var myTides = [];
 var queuedMessage = {};
 var duration = 24;
+var datetime = 0;
+var date = 0;
+var hour = 0;
 // ========== GLOBAL VARIABLES ==========
+
+function setCurrentDateTime() {
+	datetime = new Date();
+	date = datetime.getDate();
+	hour = datetime.getHours();
+}
 
 // This function uses regex to return the number day of the forecast
 function getDayFromString( str ) {
@@ -65,7 +74,12 @@ function fetchSpotConditions( spot, duration ) {
 			if( response && response.length > 0 ) {
 				for( var i=0; i<duration; i++ ) {
 					var result = response[ i ];
-					myForecasts.push({ "spot": result.spot_name.toString(), "county": spot.county, "date": getDayFromString( result.date ), "hour": getHourFromString( result.hour ), "general": conditionIdFromString( result.shape_full ), "swell": conditionIdFromString( result.shape_detail.swell ), "tide": conditionIdFromString( result.shape_detail.tide ), "wind": conditionIdFromString( result.shape_detail.wind ), "swell_size": result.size.toString() /* No support for snprintf in app */ });
+					var result_date = getDayFromString( result.date );
+					var result_hour = getHourFromString( result.hour );
+					
+					if( result_date >= date || ( result_date === date && result_hour >= hour ) ){
+						myForecasts.push({ "spot": result.spot_name.toString(), "county": spot.county, "date": result_date, "hour": result_hour, "general": conditionIdFromString( result.shape_full ), "swell": conditionIdFromString( result.shape_detail.swell ), "tide": conditionIdFromString( result.shape_detail.tide ), "wind": conditionIdFromString( result.shape_detail.wind ), "swell_size": result.size });
+					}
 				}
 			}
 		}
@@ -86,8 +100,13 @@ function fetchCountyTides( county, duration ) {
 			if( response && response.length > 0 ) {
 				for( var i=0; i<duration; i++ ) {
 					var result = response[ i ];
-					var height = Math.floor( result.tide*100 );
-					myTides.push({ "county": county.toString(), "date": getDayFromString( result.date ), "hour": getHourFromString( result.hour ), "tide_height": height });
+					var result_date = getDayFromString( result.date );
+					var result_hour = getHourFromString( result.hour );
+					
+					if( result_date >= date || ( result_date === date && result_hour >= hour ) ){
+						var height = Math.floor( result.tide*100 );
+						myTides.push({ "county": county.toString(), "date": result_date, "hour": result_hour, "tide_height": height });
+					}
 				}
 			}
 		}
@@ -101,6 +120,8 @@ function fetchCountyTides( county, duration ) {
 function fetchSurfcast( duration ) {
 	myForecasts = [];
 	myTides = [];
+	
+	setCurrentDateTime();
 		
 	for( var i=0; i<mySpots.length; i++ ){
 		fetchSpotConditions( mySpots[ i ],duration );
