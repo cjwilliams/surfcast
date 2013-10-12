@@ -146,6 +146,7 @@ static void forecast_unload( Window *window ) {
 	}
 	
 	current_title_layer = current_icon_layer = current_value_layer = 0;
+	window_destroy( forecast_window );
 }
 
 static void create_forecast_display() {
@@ -212,6 +213,8 @@ static void menu_unload( Window *window ) {
 	for (int i = 0; i < NUM_SPOTS; i++) {
     gbitmap_destroy( condition_icons[ i ] );
   }
+
+	window_destroy( menu_window );
 }
 
 static void create_menu_display( void ) {
@@ -266,6 +269,7 @@ static void splash_unload( Window *window ) {
 	gbitmap_destroy( splash_logo_bitmap );
 	bitmap_layer_destroy( splash_logo_layer );
 	text_layer_destroy( splash_credits_layer );
+	window_destroy( splash_window );
 }
 
 static void create_splash_display( void ) {	
