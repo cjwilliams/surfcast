@@ -12,6 +12,17 @@ static int stopped = 0;
 static int date;
 static int hour;
 
+int find_max_int_in_array( int *int_array, int length ){
+	int max = int_array[ 0 ];
+	
+	for( int i=0; i<length; i++ ){
+		if( int_array[ i ] > max ){
+			max = int_array[ i ];
+		}
+	}
+	return max;
+}
+
 //========== Timekeeping (Forecast/TideForecast Validity) ==========
 void set_current_datetime( struct tm *tick_time, TimeUnits units_changed ){
 	if( date != tick_time->tm_mday || hour != tick_time->tm_hour ){

@@ -53,8 +53,12 @@ char *get_county_name( Location *location );
 char *get_spot_name( Location *location );
 
 bool has_current_forecast( Location *location );
+bool has_current_tide_forecast( Location *location );
+
 int get_current_conditions( Location *location, int condition_type );
 char *get_current_swell_size( Location *location );
+
+int *get_tide_forecasts( Location *location );
 
 void init_forecast_data();
 void deinit_forecast_data();

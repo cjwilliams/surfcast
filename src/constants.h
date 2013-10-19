@@ -9,6 +9,8 @@
 
 #define NUM_CONDITIONS 5	// Number of total conditions (Poor, Poor-Fair, Fair, Fair-Good, Good)
 
+#define NUM_TIDE_FORECASTS 5
+
 // Values obtained from Pebble Forums - should replace these with bounds from layer_get_frame( Layer *layer )
 #define SCREEN_WIDTH 144
 #define SCREEN_HEIGHT 168

@@ -18,6 +18,8 @@ static County counties[ NUM_COUNTIES ];	// Array containing all counties
 static int next_location = 0;	// Index for locations[]
 static int next_county = 0;		// Index for counties[]
 
+static int *tide_forecasts;
+
 //========== Counties ==========
 char *get_county_name( Location *location ){
 	return location->county->county_name;
@@ -209,8 +211,26 @@ static ForecastNode *get_current_forecast( Location *location ){
 	}
 }
 
+static TideForecastNode *get_current_tide_forecast( Location *location ){
+	if( ( location->county->first_tide_forecast->date == get_current_date() ) && ( location->county->first_tide_forecast->hour == get_current_hour() ) ){
+		return location->county->first_tide_forecast;
+	}
+	else{
+		return NULL;
+	}
+}
+
 bool has_current_forecast( Location *location ){
 	if ( get_current_forecast( location ) ){
+		return true;
+	}
+	else{
+		return false;
+	}
+}
+
+bool has_current_tide_forecast( Location *location ){
+	if ( get_current_tide_forecast( location ) ){
 		return true;
 	}
 	else{
@@ -226,6 +246,21 @@ int get_current_conditions( Location *location, int condition_type ){
 char *get_current_swell_size( Location *location ){
 	ForecastNode *forecast = get_current_forecast( location );
 	return( forecast->swell_size );
+}
+
+int *get_tide_forecasts( Location *location ){
+	// srand(time(NULL));
+	tide_forecasts = malloc( NUM_TIDE_FORECASTS*sizeof(int) );
+	TideForecastNode *tide_forecast = get_current_tide_forecast( location );
+	
+	for( int i=0; i<NUM_TIDE_FORECASTS; i++ ){
+		tide_forecasts[ i ] =  tide_forecast->tide_height;
+		tide_forecast = tide_forecast->next_tide_forecast;
+
+		// tide_forecasts[ i ] = rand()%1000;
+	}
+		
+	return( tide_forecasts );	// Is this right?
 }
 
 //========== Data Management ==========

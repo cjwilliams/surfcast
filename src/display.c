@@ -29,24 +29,115 @@ static const uint32_t CONDITION_ICONS[] = {
 static Window *splash_window = NULL;
 static Window *menu_window = NULL;
 static Window *forecast_window = NULL;
+static Window *tide_window = NULL;
 
 static TextLayer *splash_title_layer = NULL;
 static TextLayer *splash_credits_layer = NULL;
+static BitmapLayer *splash_logo_layer = NULL;
+
+static MenuLayer *menu_layer = NULL;
+
+static BitmapLayer *forecast_icon_layers[ MAX_LAYERS ] = { NULL }; 
 static TextLayer *forecast_title_layers[ MAX_LAYERS ] = { NULL };
 static TextLayer *forecast_value_layers[ MAX_LAYERS ] = { NULL };
 
-static MenuLayer *menu_layer = NULL;
-static BitmapLayer *splash_logo_layer = NULL;
-static BitmapLayer *forecast_icon_layers[ MAX_LAYERS ] = { NULL }; 
+static int current_title_layer = 0;		// Index for forecast_title_layers
+static int current_value_layer = 0;		// Index for forecast_value_layers
+static int current_icon_layer = 0;		// Index for forecast_icon_layers
+
+static TextLayer *tide_text_layer;
+static Layer *tide_layer;
+
+static GPoint tide_forecast_points[ NUM_TIDE_FORECASTS+2 ];	// Add 2 to NUM_TIDE_FORECASTS to add zero points on both ends of path being drawn
+static GPath *tide_path;
+static GPathInfo tide_gpath_info = { 0, NULL };
+static int max_tide_height = 0;
 
 static GBitmap *splash_logo_bitmap;
 static GBitmap *condition_icons[ NUM_CONDITIONS ];
 
 static Location *drawable_location;	// Used to pass location between menu_row and forecast display (location param not supported in callbacks)
 
-static int current_title_layer = 0;	// Index for forecast_title_layers
-static int current_value_layer = 0;	// Index for forecast_value_layers
-static int current_icon_layer = 0;		// Index for forecast_icon_layers
+//========== Tide Graph ==========
+static GPathInfo *get_and_scale_points( Location *location, GRect bounds ){
+	int *tide_forecasts = get_tide_forecasts( location );
+	
+	max_tide_height = find_max_int_in_array( tide_forecasts, NUM_TIDE_FORECASTS );
+	int num_gpath_points = NUM_TIDE_FORECASTS+2;
+	
+	tide_forecast_points[ 0 ] = GPoint( 0,0 );
+	for( int i=0; i<NUM_TIDE_FORECASTS; i++ ){
+		tide_forecast_points[ i+1 ] = GPoint( ( i*bounds.size.w )/( NUM_TIDE_FORECASTS-1 ), ( tide_forecasts[ i ]*( -1 )*( bounds.size.h-20 )/max_tide_height ) );
+		APP_LOG( APP_LOG_LEVEL_DEBUG_VERBOSE, "TIDE FORECAST: %i ", tide_forecasts[ i ] );
+	}
+	tide_forecast_points[ num_gpath_points-1 ] = GPoint( bounds.size.w,0 );
+	
+	for( int j=0; i<num_gpath_points; i++ ){
+		APP_LOG( APP_LOG_LEVEL_DEBUG_VERBOSE, "TIDE FORECAST GPOINT: (%i,%i)", tide_forecast_points[ j ].x, tide_forecast_points[ j ].y );
+	}
+	
+	free( tide_forecasts );	// Free memory allocated in get_tide_forecasts but no longer needed
+	
+	tide_gpath_info = (GPathInfo){ ( num_gpath_points ), tide_forecast_points };
+	
+	return &tide_gpath_info;
+}
+
+static void tide_layer_update_callback( Layer *me, GContext *ctx ) {
+  (void)me;
+	graphics_context_set_stroke_color(ctx, GColorBlack);
+  graphics_context_set_fill_color(ctx, GColorBlack);
+	gpath_draw_filled(ctx, tide_path);
+	
+	// graphics_text_draw( ctx, "1.0", fonts_get_system_font( FONT_KEY_FONT_FALLBACK ), GRect( 10, USABLE_HEIGHT-max_tide_height-10, 10, 10 ), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
+	// graphics_text_draw( ctx, "0.0", fonts_get_system_font( FONT_KEY_FONT_FALLBACK ), GRect( 10, USABLE_HEIGHT-10, 10, 10 ), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
+}
+
+static void tide_load( Window *window ){
+	if( has_current_tide_forecast( drawable_location ) ){
+		tide_text_layer = text_layer_create( GRect( 0,10,SCREEN_WIDTH,20 ) );
+		text_layer_set_text( tide_text_layer, "Tide Heights" );	
+		text_layer_set_text_alignment( tide_text_layer, GTextAlignmentCenter );
+		text_layer_set_background_color( tide_text_layer, GColorClear);
+		layer_add_child( window_get_root_layer( tide_window ), text_layer_get_layer( tide_text_layer ) );
+
+		GRect bounds = grect_crop( layer_get_frame( window_get_root_layer( tide_window ) ), 10 );	// Create bounds w/10px padding on all sides
+		
+		tide_layer = layer_create( bounds );
+		layer_set_update_proc( tide_layer, tide_layer_update_callback );
+		layer_add_child( window_get_root_layer( tide_window ), tide_layer );
+	
+		tide_path = gpath_create( get_and_scale_points( drawable_location, bounds ) );
+		
+		gpath_move_to( tide_path, GPoint( 0,bounds.size.h ) );
+	}
+	else{
+		tide_text_layer = text_layer_create( GRect( 0,USABLE_HEIGHT/3,SCREEN_WIDTH,USABLE_HEIGHT/3 ) );
+		text_layer_set_text( tide_text_layer, "There are no current tide forecasts for this location" );
+		text_layer_set_text_alignment( tide_text_layer, GTextAlignmentCenter );
+		text_layer_set_background_color( tide_text_layer, GColorClear);
+		layer_add_child( window_get_root_layer( tide_window ), text_layer_get_layer( tide_text_layer ) );
+	}
+}
+
+static void tide_unload( Window *window ){
+	text_layer_destroy( tide_text_layer );
+	if( tide_layer ){ layer_destroy( tide_layer ); }
+	if( tide_path ){ gpath_destroy( tide_path ); }
+	
+	window_destroy( tide_window );
+}
+
+static void create_tide_graph() {
+	if( !tide_window){ tide_window = window_create(); }
+	
+	window_set_window_handlers( tide_window, (WindowHandlers){
+    .load = tide_load,
+    .unload = tide_unload,
+  });
+
+	window_stack_push( tide_window, true );
+}
 
 //========== Forecast ==========
 static char *getDescription( int value ) {
@@ -107,7 +198,7 @@ static void create_text_box( char *text, int width_units, int x, int y, char *va
 	if( current_value_layer < MAX_LAYERS ){ forecast_value_layers[ current_value_layer++ ] = text_layer; }
 }
 
-// create_error_box displays a centered error message on a full screen
+// display_forecast_error displays a centered error message on a full screen
 static void display_forecast_error( void ){
 	TextLayer *text_layer;
 	
@@ -119,7 +210,17 @@ static void display_forecast_error( void ){
 	if( current_title_layer < MAX_LAYERS ){ forecast_title_layers[ current_title_layer++ ] = text_layer; }
 }
 
+static void forecast_select_click_handler( ClickRecognizerRef recognizer, void *context ) {
+	create_tide_graph();
+}
+
+void forecast_config_provider(ClickConfig **config, void *context) {
+  config[BUTTON_ID_SELECT]->click.handler = (ClickHandler) forecast_select_click_handler;
+}
+
 static void forecast_load( Window *window ) {
+	window_set_click_config_provider( forecast_window, (ClickConfigProvider) forecast_config_provider );
+	
 	if( has_current_forecast( drawable_location ) ){
 		create_box( drawable_location->name, 2, 0, 0, get_current_conditions( drawable_location, OVERALL ) );
 		create_box( "Swell", 1, 0, USABLE_HEIGHT/3, get_current_conditions( drawable_location, SWELL ) );
