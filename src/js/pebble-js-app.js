@@ -9,36 +9,41 @@
 
 // TODO: Double check variable scopes!!!
 
-// ========== GLOBAL VARIABLES ==========
+//========== GLOBAL VARIABLES ==========
+var MAX_MESSAGE_BYTES = 77;
 var mySpots = [ 
-		{ county: "orange-county", spot_id: 602, spot_name: "Surfside Jetty" },
-		{ county: "santa-cruz", spot_id: 2, spot_name: "Steamer Lane" },
-		{ county: "san-diego", spot_id: 594, spot_name: "Oceanside Pier" },
-		{ county: "san-francisco", spot_id: 697, spot_name: "Kellys Cove" },
-		{ county: "monterey", spot_id: 154, spot_name: "Carmel Beach" }
+		{ spitcast_spot_id: 602, spot_name: "Surfside Jetty", internal_id: 0, county_id: 0 },
+		{ spitcast_spot_id: 2, spot_name: "Steamer Lane", internal_id: 1, county_id: 1 },
+		{ spitcast_spot_id: 594, spot_name: "Oceanside Pier", internal_id: 2, county_id: 2 },
+		{ spitcast_spot_id: 697, spot_name: "Kellys Cove", internal_id: 3, county_id: 3 },
+		{ spitcast_spot_id: 154, spot_name: "Carmel Beach", internal_id: 4, county_id: 4 }
 	];
-var myCounties = [ "orange-county","santa-cruz","san-diego","san-francisco","monterey" ];
+var myCounties = [ 
+		{ spitcast_county_id: "orange-county", county_name: "Orange County", internal_id: 0 },
+		{ spitcast_county_id: "santa-cruz", county_name: "Santa Cruz", internal_id: 1 },
+		{ spitcast_county_id: "san-diego", county_name: "San Diego", internal_id: 2 },
+		{ spitcast_county_id: "san-francisco", county_name: "San Francisco", internal_id: 3 },
+		{ spitcast_county_id: "monterey", county_name: "Monterey", internal_id: 4 }
+	];
 var myForecasts = [];
 var myTides = [];
+var myStringLocations = [];
+var myStringCounties = [];
+var myMessages = [];
 var queuedMessage = {};
-var duration = 24;
-var datetime = 0;
-var date = 0;
-var hour = 0;
-// ========== GLOBAL VARIABLES ==========
+var current_timestamp = 0;
+//========== GLOBAL VARIABLES ==========
 
 function setCurrentDateTime() {
-	datetime = new Date();
-	date = datetime.getDate();
-	hour = datetime.getHours();
-}
+	var datetime = new Date();
+	current_timestamp = ( ( ( datetime.getDate() & 0x1F )<<5 | ( datetime.getHours() & 0x1F ) ) & 0x3FF );
+}	// 0x1F is a 5bit mask, 0x3FF is a 10bit mask
 
-// This function uses regex to return the number day of the forecast
+//========== Massaging Original Data ==========
 function getDayFromString( str ) {
 	return( parseInt( str.replace( /^[A-Za-z\s]*/,"" ).replace( /\s[0-9]{4}$/,"" ),10 ) );
-}
+}	// This function uses regex to return the number day of the forecast
 
-// This function uses regex to return the hour of the forecast
 function getHourFromString( str ) {
 	var hour = 0;
 
@@ -49,9 +54,8 @@ function getHourFromString( str ) {
 	hour += parseInt( str.replace( /[AP][M]$/,"" ),10 );
 
 	return( hour );
-}
+}	// This function uses regex to return the hour of the forecast
 
-// This function returns an integer key value equivalent to the provided forecast condition string
 function conditionIdFromString( conditionType ) {
 	switch( conditionType ) {
   	case "Poor": return 0; break;
@@ -60,12 +64,93 @@ function conditionIdFromString( conditionType ) {
 		case "Fair-Good": return 3; break;
 		case "Good": return 4; break;
   }
+}	// This function returns an integer key value equivalent to the provided forecast condition string
+
+//========== Packing Data ==========
+function packTimestamp( date_str, time_str ){
+	return( ( ( getDayFromString( date_str ) & 0x1F )<<5 | ( getHourFromString( time_str ) & 0x1F ) ) & 0x3FF );
 }
 
-// This function performs the API calls for forecast data & calls sendAppMessage to send the response to the Pebble watch for display
+// Check mask values!
+function packForecast( spot_id, general_str, swell_str, tide_str, wind_str, swell_size ){
+	// 24 bits = 3 bytes total
+	// Bits 0-7: Spot ID										( spot_id & 0xFF ) << 16
+	// Bits 8-10: General Forecast					( general & 0x7 ) << 13
+	// Bits 11-13: Swell Forecast						( swell & 0x7 ) << 10
+	// Bits 14-16: Tide Forecast						( tide & 0x7 ) << 7
+	// Bits 17-19: Wind Forecast						( wind & 0x7 ) << 4
+	// Bits 20-23: Swell Size Forecast			( swell_size & 0xF )
+	return ( 
+		( spot_id & 0xFF )<<16 | 
+		( conditionIdFromString( general_str ) & 0x7 )<<13 | 
+		( conditionIdFromString( swell_str ) & 0x7 )<<10 | 
+		( conditionIdFromString( tide_str ) & 0x7 )<<7 | 
+		( conditionIdFromString( wind_str ) & 0x7 )<<4 | 
+		( swell_size & 0xF ) 
+	);
+}
+
+function packForecastHour( timestamp, forecasts ){
+	// 2 byte date/hour header + 3 bytes per forecast
+	for( var i=0; i<forecasts.length; i++ ){
+		timestamp<<=0x100 | ( forecasts[ i ] & 0x13 );	// Check mask values!
+	}
+	
+	return forecast_hour;
+}
+
+function stringifyLocations(){
+	for( var i=0; i<mySpots.length; i++ ){
+		spot = mySpots[ i ];
+		console.log( spot.spitcast_spot_id.toString()+spot.internal_id.toString()+spot.county_id.toString()+spot.spot_name );
+		myStringLocations.push( spot.spitcast_spot_id.toString()+spot.internal_id.toString()+spot.county_id.toString()+spot.spot_name );
+	}
+}
+
+function stringifyCounties(){
+	for( var i=0; i<myCounties.length; i++ ){
+		county = myCounties[ i ];
+		console.log( county.internal_id.toString()+county.spitcast_county_id.toString() );
+		myStringCounties.push( county.internal_id.toString()+county.spitcast_county_id.toString() );
+	}
+}
+
+function packMessages(){
+	var queuedLocation;
+	
+	while( myStringLocations.length > 0 ){
+		queuedLocation = myStringLocations.pop();
+		
+		if( ( message.length + queuedLocation.length ) <= MAX_MESSAGE_BYTES ){
+			message += queuedLocation;
+		}
+		else{
+			myMessages.push( "locations": message );
+			message = queuedLocation;
+		}
+	}
+	
+	while( myStringCounties.length > 0 ){
+		queuedCounty = myStringCounties.pop();
+		
+		if( ( message.length + queuedCounty.length ) <= MAX_MESSAGE_BYTES ){
+			message += queuedCounty;
+		}
+		else{
+			myMessages.push( "counties": message );
+			message = queuedCounty;
+		}
+	}	
+}
+
+function convertToLittleEndian( array ){
+	// Is this needed?
+}
+
+//========== Retrieving Data ==========
 function fetchSpotConditions( spot, duration ) {
 	var request = new XMLHttpRequest();
-	request.open( 'GET', 'http://api.spitcast.com/api/spot/forecast/'+spot.spot_id.toString()+'/?dcat=week', true );
+	request.open( 'GET', 'http://api.spitcast.com/api/spot/forecast/'+spot.spitcast_spot_id.toString()+'/?dcat=week', true );
 
 	request.onload = function( e ) {
 		if( request.readyState == 4 && request.status == 200 ) {
@@ -74,11 +159,11 @@ function fetchSpotConditions( spot, duration ) {
 			if( response && response.length > 0 ) {
 				for( var i=0; i<duration; i++ ) {
 					var result = response[ i ];
-					var result_date = getDayFromString( result.date );
-					var result_hour = getHourFromString( result.hour );
+					var timestamp = packTimestamp( result.date, result.hour );
 					
-					if( result_date >= date || ( result_date === date && result_hour >= hour ) ){
-						myForecasts.push({ "spot": result.spot_name.toString(), "county": spot.county, "date": result_date, "hour": result_hour, "general": conditionIdFromString( result.shape_full ), "swell": conditionIdFromString( result.shape_detail.swell ), "tide": conditionIdFromString( result.shape_detail.tide ), "wind": conditionIdFromString( result.shape_detail.wind ), "swell_size": result.size });
+					if( timestamp >= current_timestamp ){
+						myForecasts.push([ timestamp, packForecast( spot.internal_id, result.shape_full, result.shape_detail.swell, result.shape_detail.tide, result.shape_detail.wind, result.size ) ]);
+						myForecasts.sort( function( a,b ){ return a.timestamp-b.timestamp; });
 					}
 				}
 			}
@@ -86,12 +171,11 @@ function fetchSpotConditions( spot, duration ) {
 		else { console.log( "Error" ); }
 	}
 	request.send( null );
-}
+} // This function performs the API calls for forecast data & calls sendAppMessage to send the response to the Pebble watch for display
 
-// This function performs the API calls for tide data & calls sendAppMessage to send the response to the Pebble watch for display
 function fetchCountyTides( county, duration ) {
 	var request = new XMLHttpRequest();
-	request.open( 'GET', 'http://api.spitcast.com/api/county/tide/'+county+'/', true );
+	request.open( 'GET', 'http://api.spitcast.com/api/county/tide/'+county.spitcast_county_id+'/', true );
 
 	request.onload = function( e ) {
 		if( request.readyState == 4 && request.status == 200 ) {
@@ -100,12 +184,12 @@ function fetchCountyTides( county, duration ) {
 			if( response && response.length > 0 ) {
 				for( var i=0; i<duration; i++ ) {
 					var result = response[ i ];
-					var result_date = getDayFromString( result.date );
-					var result_hour = getHourFromString( result.hour );
-					
-					if( result_date >= date || ( result_date === date && result_hour >= hour ) ){
+					var timestamp = ( getDayFromString( result.date ) & 0x1F )<<5 | ( getHourFromString( result.hour ) & 0x1F );
+
+					if( timestamp >= current_timestamp ){
 						var height = Math.floor( result.tide*100 );
-						myTides.push({ "county": county.toString(), "date": result_date, "hour": result_hour, "tide_height": height });
+						myTides.push({ "county": county.internal_id, "timestamp": timestamp, "tide_height": height });
+						myTides.sort( function( a,b ){ return a.timestamp-b.timestamp; });
 					}
 				}
 			}
@@ -113,10 +197,9 @@ function fetchCountyTides( county, duration ) {
 		else { console.log( "Error" ); }
 	}
 	request.send( null );
-}
+}	// This function performs the API calls for tide data & calls sendAppMessage to send the response to the Pebble watch for display
 
 // Can optimize this further by allowing param of retrievalDate, to minimize messages to send to watch
-// This function facilitates the collection of forecasts and tide heights
 function fetchSurfcast( duration ) {
 	myForecasts = [];
 	myTides = [];
@@ -130,41 +213,39 @@ function fetchSurfcast( duration ) {
 	for( var j=0; j<myCounties.length; j++ ){
 		fetchCountyTides( myCounties[ j ],duration );
 	}
-	Pebble.sendAppMessage({ "request_status": 4 })
-}
-
-// This function transmits the next forecast/tide data to the Pebble watch
-function transmitNextForecast() {
-	console.log( "Forecasts: "+myForecasts.length );
-	console.log( "Tides: "+myTides.length );
 	
-	if( myForecasts.length > 0 ) {
-		queuedMessage = myForecasts.pop();
+	Pebble.sendAppMessage({ "request_status": 4 })
+}	// This function facilitates the collection of forecasts and tide heights
+
+
+//========== Transmitting Data ==========
+function transmitNextMessage() {
+	if( myMessages.length > 0 ) {
+		queuedMessage = myMessages.pop();
 		Pebble.sendAppMessage( queuedMessage );
 		console.log( "Forecast transmission" );
-	}
-	else if( myTides.length > 0 ) {
-		queuedMessage = myTides.pop();
-		Pebble.sendAppMessage( queuedMessage );
-		console.log( "Tide transmission" );
 	}
 	else {
 		Pebble.sendAppMessage({ "request_status": 0 })
 		console.log( "Empty tides/forecasts" );
 	}
-}
+} // This function transmits the next message to the Pebble watch
 
-// This function retransmits forecast/tide data that may not have made it to the Pebble watch
-function retransmitForecast() {
+function retransmitMessage() {
 	if( Object.keys( queuedMessage ).length > 0 ){
 		Pebble.sendAppMessage( queuedMessage );
 		console.log( "Resent dropped message" );
 	}
 	else {
 		console.log( "No messages in queue" );
-		transmitNextForecast();
+		transmitNextMessage();
 	}
-}
+}	// This function retransmits messages that may not have made it to the Pebble watch
+
+
+
+
+//========== Event Listeners ==========
 
 // This listener directs the preparation for forecast requests
 PebbleEventListener.addEventListener( "ready",
@@ -180,8 +261,8 @@ PebbleEventListener.addEventListener( "appmessage",
                           console.log( e.type );
 													console.log( e.payload.request_status );
 													console.log( "message!" );
-													if( e.payload.request_status == 2 ){ retransmitForecast(); }
-													else if( e.payload.request_status == 3 ){ fetchSurfcast( duration ); }
-													else { transmitNextForecast(); }
+													if( e.payload.request_status == 2 ){ retransmitMessage(); }
+													else if( e.payload.request_status == 3 ){ fetchSurfcast( 24 ); }
+													else { transmitNextMessage(); }
                         });
 // Removed "if( myTides.length > 0 || myForecasts.length >0 )" from last else because the extra +1 iteration seems to be necessary to signal the watch app
