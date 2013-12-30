@@ -1,3 +1,6 @@
 # Ignore build generated files
+.DS_Store
 build
 .lock-waf_darwin_build
+src/.DS_Store
+marketing
