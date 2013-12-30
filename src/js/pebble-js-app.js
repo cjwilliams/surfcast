@@ -152,6 +152,18 @@ Pebble.addEventListener( "ready",
 													fetchSurfcast( duration );
 													console.log( e.type );
                         });
+												
+Pebble.addEventListener( "showConfiguration",
+												function( e ) {
+													console.log( e.type );
+													Pebble.openURL( "http://surfcast.s3-website-us-east-1.amazonaws.com" );
+												});
+
+Pebble.addEventListener( "webviewclosed",
+											  function( e ) {
+													var configuration = JSON.parse( decodeURIComponent( e.response ) );
+													console.log( "Configuration returned: " + JSON.stringify( configuration ) );
+												});
 
 // This listener directs the forecast request & response activities
 Pebble.addEventListener( "appmessage",
