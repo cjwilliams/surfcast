@@ -128,7 +128,6 @@ function transmitNextForecast() {
 	}
 	else {
 		console.log( "Empty tides/forecasts" );
-		Pebble.sendAppMessage({ "request_status": 0 }, function( e ){ transmitNextForecast(); }, function( e ){ console.log( e.error.message ); retransmitForecast(); } );
 	}
 }
 
@@ -170,6 +169,7 @@ Pebble.addEventListener( "appmessage",
                           console.log( e.type );
 													console.log( e.payload.request_status );
 													console.log( "message!" );
-													if( e.payload.request_status == 1 ){ transmitNextForecast(); }
+													if( e.payload.request_status == 0 ){ return; }
+													else if( e.payload.request_status == 1 ){ transmitNextForecast(); }
 													else if( e.payload.request_status == 2 ){ fetchSurfcast(); }
                         });
