@@ -84,7 +84,7 @@ static Location *create_location( char *spot_name, char *county_name ){
 }
 
 //========== Forecast & TideForecast Creation & Expiration ==========
-ForecastNode *create_forecast( char *spot_name, char *county_name, int date, int hour, int general, int swell, int tide, int wind, char *swell_size ){
+ForecastNode *create_forecast( char *spot_name, char *county_name, int date, int hour, int general, int swell, int tide, int wind, int swell_size ){
 	// Check that forecast isn't already expired
 	if( date > get_current_date() || ( date == get_current_date() && hour >= get_current_hour() ) ){
 		Location *location;
@@ -104,7 +104,7 @@ ForecastNode *create_forecast( char *spot_name, char *county_name, int date, int
 		forecast->conditions[1] = swell;
 		forecast->conditions[2] = tide;
 		forecast->conditions[3] = wind;
-		strncpy( forecast->swell_size, swell_size, sizeof( forecast->swell_size ) );
+		forecast->swell_size = swell_size;
 
 		// Insert the new ForecastNode
 		if( ( current = location->first_forecast ) == NULL || ( current->date > forecast->date ) || ( current->date == forecast->date && current->hour > forecast->hour ) ){
@@ -221,7 +221,7 @@ int get_current_conditions( Location *location, int condition_type ){
 	return( forecast->conditions[ condition_type ] );
 }
 
-char *get_current_swell_size( Location *location ){
+int get_current_swell_size( Location *location ){
 	ForecastNode *forecast = get_current_forecast( location );
 	return( forecast->swell_size );
 }

@@ -64,7 +64,7 @@ static void in_received_handler( DictionaryIterator *received, void *context ) {
 			dict_find( received, SWELL_KEY )->value->uint32,
 			dict_find( received, TIDE_KEY )->value->uint32,
 			dict_find( received, WIND_KEY )->value->uint32,
-			dict_find( received, SWELL_SIZE_KEY )->value->cstring
+			dict_find( received, SWELL_SIZE_KEY )->value->uint32
 		);
 		APP_LOG( APP_LOG_LEVEL_DEBUG, "SPOT: %s, DATE: %lu, HOUR: %lu, GENERAL: %lu, SWELL: %lu, TIDE: %lu, WIND: %lu, SWELL_SIZE: %s", 
 			tuple->value->cstring,

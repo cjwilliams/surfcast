@@ -6,7 +6,7 @@ typedef struct ForecastNode {
 	int date;
 	int hour;
 	int conditions[ 4 ];
-	char swell_size[ 2 ];		// snprintf?
+	int swell_size;
 	struct ForecastNode *next_forecast;
 } ForecastNode;
 
@@ -39,7 +39,7 @@ enum condition_types {
 	WIND = 3
 };
 	
-ForecastNode *create_forecast( char *spot_name, char *county_name, int date, int hour, int general, int swell, int tide, int wind, char *swell_size );
+ForecastNode *create_forecast( char *spot_name, char *county_name, int date, int hour, int general, int swell, int tide, int wind, int swell_size );
 TideForecastNode *create_tide_forecast( char *county_name, int date, int hour, int tide_height );
 
 void expire_forecasts_before( int date, int hour );
@@ -54,7 +54,7 @@ char *get_spot_name( Location *location );	// Returns spot name, location cannot
 
 bool has_current_forecast( Location *location );
 int get_current_conditions( Location *location, int condition_type );
-char *get_current_swell_size( Location *location );
+int get_current_swell_size( Location *location );
 
 void init_forecast_data();
 void deinit_forecast_data();

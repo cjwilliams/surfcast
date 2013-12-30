@@ -86,8 +86,12 @@ static void create_box( char *text, int width_units, int x, int y, int value ) {
 }
 
 // create_text_box creates a box of full or half screen width and 1/3 screen height, with a description and large text value
-static void create_text_box( char *text, int width_units, int x, int y, char *value ) {
+static void create_text_box( char *text, int width_units, int x, int y, int value ) {
 	TextLayer *text_layer;
+	char *text_value;
+	text_value = malloc( 2 );
+	
+	snprintf( text_value, sizeof( text_value ), "%d", value );
 	
 	text_layer = text_layer_create( GRect( x,y,( width_units * SCREEN_WIDTH )/2,USABLE_HEIGHT/3 ) );
 	text_layer_set_text( text_layer, text );
@@ -97,7 +101,7 @@ static void create_text_box( char *text, int width_units, int x, int y, char *va
 	if( current_title_layer < MAX_LAYERS ){ forecast_title_layers[ current_title_layer++ ] = text_layer; }
 	
 	text_layer = text_layer_create( GRect( x,y+( ( ( USABLE_HEIGHT/3 )-STATUS_BAR_HEIGHT )/2 ),( width_units * SCREEN_WIDTH )/2,USABLE_HEIGHT/3 ) );
-	text_layer_set_text( text_layer, value );
+	text_layer_set_text( text_layer, text_value );
 	text_layer_set_text_alignment( text_layer, GTextAlignmentCenter );
 	text_layer_set_font( text_layer, fonts_get_system_font( FONT_KEY_GOTHIC_14 ) );
 	text_layer_set_background_color( text_layer, GColorClear);
