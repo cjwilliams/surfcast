@@ -8,9 +8,7 @@
 //			void gbitmap_destroy( GBitmap *bitmap );
 // 	
 
-#include <pebble_os.h>
-#include <pebble_app.h>
-#include <pebble_fonts.h>
+#include <pebble.h>
 
 #include "display.h"
 #include "constants.h"
@@ -150,7 +148,7 @@ static void forecast_unload( Window *window ) {
 }
 
 static void create_forecast_display() {
-	if( !forecast_window ){ forecast_window = window_create(); }
+	forecast_window = window_create();
 	
 	window_set_window_handlers( forecast_window, (WindowHandlers){
     .load = forecast_load,
@@ -174,9 +172,11 @@ static uint16_t menu_get_num_rows_callback( MenuLayer *menu_layer, uint16_t sect
 
 static void menu_draw_row_callback( GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data ) {
 	Location *location = get_location_by_index( cell_index->row );
-	
-	if( location != NULL ){
+	if( location != NULL && has_current_forecast( location ) ){
 		menu_cell_basic_draw( ctx, cell_layer, get_spot_name( location ), get_county_name( location ), condition_icons[ get_current_conditions( location, OVERALL ) ] );
+	}
+	else{
+		APP_LOG( APP_LOG_LEVEL_WARNING, "Attempted to access a NULL location" );	// This shouldn't happen anymore
 	}
 }
 
@@ -218,7 +218,7 @@ static void menu_unload( Window *window ) {
 }
 
 static void create_menu_display( void ) {
-	if( !menu_window ){ menu_window = window_create(); }
+	menu_window = window_create();
 	
 	window_set_window_handlers( menu_window, (WindowHandlers){
     .load = menu_load,
@@ -233,8 +233,11 @@ static void splash_click_handler( ClickRecognizerRef recognizer, void *context )
 	create_menu_display();
 }
 
-static void splash_config_provider( ClickConfig **config, Window *window ) {
-  config[ BUTTON_ID_SELECT ]->click.handler = config[ BUTTON_ID_UP ]->click.handler = config[ BUTTON_ID_DOWN ]->click.handler  = splash_click_handler;	// Makes all clicks direct to menu screen
+static void splash_config_provider( Window *window ) {
+	window_single_click_subscribe( BUTTON_ID_UP, splash_click_handler );
+	window_single_click_subscribe( BUTTON_ID_SELECT, splash_click_handler );
+	window_single_click_subscribe( BUTTON_ID_DOWN, splash_click_handler );
+	// Makes all clicks direct to menu screen
 }
 
 static void splash_load( Window *window ) {	
@@ -252,7 +255,7 @@ static void splash_load( Window *window ) {
   bitmap_layer_set_bitmap( splash_logo_layer, splash_logo_bitmap );
   layer_add_child( window_get_root_layer( window ), bitmap_layer_get_layer( splash_logo_layer ) );
 	
-	splash_credits_layer = text_layer_create( GRect( 0,USABLE_HEIGHT-( 2*STATUS_BAR_HEIGHT ),SCREEN_WIDTH,STATUS_BAR_HEIGHT*2 ) );
+	splash_credits_layer = text_layer_create( GRect( 0,USABLE_HEIGHT-STATUS_BAR_HEIGHT,SCREEN_WIDTH,STATUS_BAR_HEIGHT*2 ) );
 	text_layer_set_text_color( splash_credits_layer, GColorWhite);
   text_layer_set_background_color( splash_credits_layer, GColorClear);
 	text_layer_set_text( splash_credits_layer, "Data provided by Spitcast (www.spitcast.com)" );
@@ -273,7 +276,7 @@ static void splash_unload( Window *window ) {
 }
 
 static void create_splash_display( void ) {	
-	if( !splash_window ){ splash_window = window_create(); }
+	splash_window = window_create();
   
 	window_set_window_handlers( splash_window, (WindowHandlers){
     .load = splash_load,
@@ -281,6 +284,7 @@ static void create_splash_display( void ) {
   });
 
 	window_set_background_color( splash_window, GColorBlack );
+	window_set_fullscreen( splash_window, true );
 	window_stack_push( splash_window, true );
 }
 

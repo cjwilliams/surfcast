@@ -47,10 +47,10 @@ void expire_tide_forecasts_before( int date, int hour );
 
 int get_num_locations();
 
-Location *get_location_by_index( int indexed_location );
+Location *get_location_by_index( int indexed_location );	// Returns location if found, NULL otherwise
 
-char *get_county_name( Location *location );
-char *get_spot_name( Location *location );
+char *get_county_name( Location *location );	// Returns county string, location cannot be NULL
+char *get_spot_name( Location *location );	// Returns spot name, location cannot be NULL
 
 bool has_current_forecast( Location *location );
 int get_current_conditions( Location *location, int condition_type );

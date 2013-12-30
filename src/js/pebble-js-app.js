@@ -146,7 +146,7 @@ function retransmitForecast() {
 }
 
 // This listener directs the preparation for forecast requests
-PebbleEventListener.addEventListener( "ready",
+Pebble.addEventListener( "ready",
                         function( e ) {
                           console.log( "connect!" + e.ready );
 													fetchSurfcast( duration );
@@ -154,7 +154,7 @@ PebbleEventListener.addEventListener( "ready",
                         });
 
 // This listener directs the forecast request & response activities
-PebbleEventListener.addEventListener( "appmessage",
+Pebble.addEventListener( "appmessage",
                         function( e ) {
                           console.log( e.type );
 													console.log( e.payload.request_status );

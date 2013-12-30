@@ -14,9 +14,7 @@
 // Some images are provided for use with this application (surfboard.png, poor.png, pf.png, fair.png, fg.png, good.png)
 // ==================================================================================================================================
 
-#include <pebble_os.h>
-#include <pebble_app.h>
-#include <pebble_fonts.h>
+#include <pebble.h>
 
 #include "app_msg.h"
 #include "display.h"

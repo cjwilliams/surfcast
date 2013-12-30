@@ -1,7 +1,6 @@
 #ifndef __CONSTANTS_H
 #define __CONSTANTS_H
 
-#define MAX_BUFFER_SIZE 124		// Used for AppMessage
 #define WATCHDOG_DELAY 20000	// 20000ms = 20s
 
 #define NUM_SPOTS 5				// This is a little sloppy, should make this a calculated value based on JS-provided results

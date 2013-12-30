@@ -1,6 +1,4 @@
-#include <pebble_os.h>
-#include <pebble_app.h>
-#include <pebble_fonts.h>
+#include <pebble.h>
 
 #include "utils.h"
 #include "constants.h"
@@ -75,6 +73,9 @@ void debug_reason( AppMessageResult reason ) {
 		case APP_MSG_ALREADY_RELEASED: APP_LOG( APP_LOG_LEVEL_DEBUG, "AppMessage: Already Released" ); break;
 		case APP_MSG_CALLBACK_ALREADY_REGISTERED: APP_LOG( APP_LOG_LEVEL_DEBUG, "AppMessage: Callback Already Registered" ); break;
 		case APP_MSG_CALLBACK_NOT_REGISTERED: APP_LOG( APP_LOG_LEVEL_DEBUG, "AppMessage: Callback Not Registered" ); break;
+		case APP_MSG_OUT_OF_MEMORY: APP_LOG( APP_LOG_LEVEL_DEBUG, "AppMessage: Out of Memory" ); break;
+		case APP_MSG_CLOSED: APP_LOG( APP_LOG_LEVEL_DEBUG, "AppMessage: Closed" ); break;
+		case APP_MSG_INTERNAL_ERROR: APP_LOG( APP_LOG_LEVEL_DEBUG, "AppMessage: Internal Error" ); break;
 	}
 }
 
@@ -84,5 +85,6 @@ void debug_dictionary_result( DictionaryResult result ) {
 		case DICT_NOT_ENOUGH_STORAGE: APP_LOG( APP_LOG_LEVEL_DEBUG, "Dictionary: Not Enough Storage" ); break;
 		case DICT_INVALID_ARGS: APP_LOG( APP_LOG_LEVEL_DEBUG, "Dictionary: Invalid Args" ); break; 	
 		case DICT_INTERNAL_INCONSISTENCY: APP_LOG( APP_LOG_LEVEL_DEBUG, "Dictionary: Internal Inconsistency" ); break;
+		case DICT_MALLOC_FAILED: APP_LOG( APP_LOG_LEVEL_DEBUG, "Dictionary: Malloc Failed" ); break;
 	}
 }

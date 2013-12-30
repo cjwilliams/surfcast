@@ -1,8 +1,6 @@
 // MEAT! This file handles all of the forecast data storage, insertion, and removal
 
-#include <pebble_os.h>
-#include <pebble_app.h>
-#include <pebble_fonts.h>
+#include <pebble.h>
 
 #include <stdlib.h>
 #include <time.h>
@@ -201,7 +199,7 @@ void expire_tide_forecasts_before( int date, int hour ){
 
 //========== Forecast & TideForecast Accessors ==========
 static ForecastNode *get_current_forecast( Location *location ){
-	if( ( location->first_forecast->date == get_current_date() ) && ( location->first_forecast->hour == get_current_hour() ) ){
+	if( ( location->first_forecast != NULL ) && ( location->first_forecast->date == get_current_date() ) && ( location->first_forecast->hour == get_current_hour() ) ){
 		return location->first_forecast;
 	}
 	else{
@@ -210,7 +208,7 @@ static ForecastNode *get_current_forecast( Location *location ){
 }
 
 bool has_current_forecast( Location *location ){
-	if ( get_current_forecast( location ) ){
+	if ( get_current_forecast( location ) != NULL ){
 		return true;
 	}
 	else{
