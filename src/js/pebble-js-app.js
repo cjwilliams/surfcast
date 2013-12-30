@@ -53,7 +53,7 @@ function conditionIdFromString( conditionType ) {
   }
 }
 
-// This function performs the API calls for forecast data & calls sendAppMessage to send the response to the Pebble watch for display
+// This function performs the API calls for forecast data
 function fetchSpotConditions( spot, duration ) {
 	var request = new XMLHttpRequest();
 	request.open( 'GET', 'http://api.spitcast.com/api/spot/forecast/'+spot.spot_id.toString()+'/?dcat=week', true );
@@ -74,7 +74,7 @@ function fetchSpotConditions( spot, duration ) {
 	request.send( null );
 }
 
-// This function performs the API calls for tide data & calls sendAppMessage to send the response to the Pebble watch for display
+// This function performs the API calls for tide data
 function fetchCountyTides( county, duration ) {
 	var request = new XMLHttpRequest();
 	request.open( 'GET', 'http://api.spitcast.com/api/county/tide/'+county+'/', true );
@@ -109,7 +109,6 @@ function fetchSurfcast( duration ) {
 	for( var j=0; j<myCounties.length; j++ ){
 		fetchCountyTides( myCounties[ j ],duration );
 	}
-	Pebble.sendAppMessage({ "request_status": 4 })
 }
 
 // This function transmits the next forecast/tide data to the Pebble watch
@@ -119,25 +118,25 @@ function transmitNextForecast() {
 	
 	if( myForecasts.length > 0 ) {
 		queuedMessage = myForecasts.pop();
-		Pebble.sendAppMessage( queuedMessage );
 		console.log( "Forecast transmission" );
+		Pebble.sendAppMessage( queuedMessage, function( e ){ transmitNextForecast(); }, function( e ){ console.log( e.error.message ); retransmitForecast(); } );
 	}
 	else if( myTides.length > 0 ) {
 		queuedMessage = myTides.pop();
-		Pebble.sendAppMessage( queuedMessage );
 		console.log( "Tide transmission" );
+		Pebble.sendAppMessage( queuedMessage, function( e ){ transmitNextForecast(); }, function( e ){ console.log( e.error.message ); retransmitForecast(); } );
 	}
 	else {
-		Pebble.sendAppMessage({ "request_status": 0 })
 		console.log( "Empty tides/forecasts" );
+		Pebble.sendAppMessage({ "request_status": 0 }, function( e ){ transmitNextForecast(); }, function( e ){ console.log( e.error.message ); retransmitForecast(); } );
 	}
 }
 
 // This function retransmits forecast/tide data that may not have made it to the Pebble watch
 function retransmitForecast() {
 	if( Object.keys( queuedMessage ).length > 0 ){
-		Pebble.sendAppMessage( queuedMessage );
 		console.log( "Resent dropped message" );
+		Pebble.sendAppMessage( queuedMessage, function( e ){ transmitNextForecast(); }, function( e ){ console.log( e.error.message ); retransmitForecast(); } );
 	}
 	else {
 		console.log( "No messages in queue" );
@@ -149,7 +148,7 @@ function retransmitForecast() {
 Pebble.addEventListener( "ready",
                         function( e ) {
                           console.log( "connect!" + e.ready );
-													fetchSurfcast( duration );
+													fetchSurfcast( duration ); 
 													console.log( e.type );
                         });
 												
@@ -171,8 +170,6 @@ Pebble.addEventListener( "appmessage",
                           console.log( e.type );
 													console.log( e.payload.request_status );
 													console.log( "message!" );
-													if( e.payload.request_status == 2 ){ retransmitForecast(); }
-													else if( e.payload.request_status == 3 ){ fetchSurfcast( duration ); }
-													else { transmitNextForecast(); }
+													if( e.payload.request_status == 1 ){ transmitNextForecast(); }
+													else if( e.payload.request_status == 2 ){ fetchSurfcast(); }
                         });
-// Removed "if( myTides.length > 0 || myForecasts.length >0 )" from last else because the extra +1 iteration seems to be necessary to signal the watch app

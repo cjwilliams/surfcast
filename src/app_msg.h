@@ -14,9 +14,7 @@ void get_next_forecast( uint8_t status_flag );
 enum REQUEST_STATUSES {
 	STOP_FLAG = 0x0,
 	NEW_MESSAGE = 0x1,
-	RETRY_MESSAGE = 0x2,
-	FETCH_ADDITIONAL = 0x3,
-	READY_FLAG = 0x4
+	FETCH_ADDITIONAL = 0x2
 };
 
 #endif
