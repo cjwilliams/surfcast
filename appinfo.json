@@ -1,7 +1,8 @@
 {
   "uuid": "55ff5562-68bf-4bf8-83d4-44e6b09e0d59",
-  "shortName": "Pebble Surfcast",
-  "longName": "Pebble Surfcast",
+  "shortName": "Surfcast",
+  "longName": "Surfcast",
+  "capabilities": [ "configurable" ],
   "companyName": "Girlgrammer",
   "versionCode": 1,
   "versionLabel": "1.0.0",
@@ -23,6 +24,12 @@
   },
   "resources": {
     "media": [
+			{
+				"type": "png",
+				"name": "MENU_ICON",
+				"file": "images/surfcast.png",
+				"menuIcon": true
+			},
       {
         "type": "png",
         "name": "SPLASH_ICON",
